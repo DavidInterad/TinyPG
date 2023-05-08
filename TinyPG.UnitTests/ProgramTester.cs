@@ -31,7 +31,7 @@ namespace TinyPG.UnitTests
         // [ClassCleanup()]
         // public static void MyClassCleanup() { }
         //
-        // Use TestInitialize to run code before running each test 
+        // Use TestInitialize to run code before running each test
         // [TestInitialize()]
         // public void MyTestInitialize() { }
         //
@@ -40,7 +40,7 @@ namespace TinyPG.UnitTests
         // public void MyTestCleanup() { }
         //
         #endregion
-        
+
         /// <summary>
         /// Test command line parameter, when file doesn't exist.
         /// </summary>
@@ -82,8 +82,8 @@ namespace TinyPG.UnitTests
         }
 
         private void FailError(ParseTree tree, StringBuilder output) { Assert.Fail(); }
-        private void PassError(ParseTree tree, StringBuilder output) { Assert.IsTrue(tree.Errors.Count > 0); 
-        
+        private void PassError(ParseTree tree, StringBuilder output) { Assert.IsTrue(tree.Errors.Count > 0);
+
         }
     }
 }

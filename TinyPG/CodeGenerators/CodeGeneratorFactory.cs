@@ -75,7 +75,7 @@ namespace TinyPG.CodeGenerators
                 case "vb":
                     return new Microsoft.VisualBasic.VBCodeProvider();
                 default:
-	                return new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
+                    return new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
             }
         }
     }

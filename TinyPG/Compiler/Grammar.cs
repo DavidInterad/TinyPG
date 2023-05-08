@@ -263,7 +263,7 @@ namespace TinyPG.Compiler
             }
             return sb.ToString();
         }
-    
+
         public string PrintFirsts()
         {
             StringBuilder sb = new StringBuilder();

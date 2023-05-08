@@ -43,7 +43,7 @@ namespace TinyPG
             treeview.ResumeLayout();
             treeview.Visible = true;
         }
-            
+
         private static void PopulateNode(TreeNode node, IParseNode start)
         {
             foreach (IParseNode ipn in start.INodes)

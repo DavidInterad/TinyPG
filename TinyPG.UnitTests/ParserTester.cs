@@ -14,10 +14,10 @@ namespace TinyPG.UnitTests
     public class ParserTester
     {
         // TODO: set the correct paths to be able to run the unittests succesfully
-        private const string TEMPLATEPATH = @"D:\MyProjects\Net\TinyPG v1.3\TinyPG\Templates\C#\";
-        private const string TEMPLATEPATH_VB = @"D:\MyProjects\Net\TinyPG v1.3\TinyPG\Templates\VB\";
-        private const string OUTPUTPATH = @"D:\MyProjects\Net\TinyPG v1.3\TinyPG.UnitTests\";
-        private const string TESTFILESPATH = @"D:\MyProjects\Net\TinyPG v1.3\TinyPG.UnitTests\Testfiles\";
+        private const string TEMPLATEPATH = @"..\..\..\TinyPG\Templates\C#\";
+        private const string TEMPLATEPATH_VB = @"..\..\..\TinyPG\Templates\VB\";
+        private const string OUTPUTPATH = @"..\..\";
+        private const string TESTFILESPATH = @"..\..\Testfiles\";
 
         public ParserTester()
         {
@@ -56,7 +56,7 @@ namespace TinyPG.UnitTests
         // [ClassCleanup()]
         // public static void MyClassCleanup() { }
         //
-        // Use TestInitialize to run code before running each test 
+        // Use TestInitialize to run code before running each test
         // [TestInitialize()]
         // public void MyTestInitialize() { }
         //
@@ -79,7 +79,7 @@ namespace TinyPG.UnitTests
         [TestMethod]
         public void SimpleExpression1_Test()
         {
-            
+
             GrammarTree GT = LoadGrammar(TESTFILESPATH + @"simple expression1.tpg");
             Grammar G = (Grammar) GT.Eval();
 
@@ -96,14 +96,14 @@ namespace TinyPG.UnitTests
             Assert.IsTrue(!String.IsNullOrEmpty(temp));
 
             Compiler.Compiler compiler = new Compiler.Compiler();
-            
+
             compiler.Compile(G);
 
             Assert.IsTrue(compiler.Errors.Count == 0, "compilation contains errors");
 
             CompilerResult result = compiler.Run("5+7/3*2+(4*2)");
 
-            
+
 
             Assert.IsTrue(result.Output.StartsWith("Parse was successful."));
         }

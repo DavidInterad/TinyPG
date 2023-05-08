@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace TinyPG.Debug
 {
-    
+
     public interface IParseError
     {
         int Code { get; }

@@ -45,7 +45,7 @@ namespace TinyPG
             while (!disposing)
             {
                 System.Threading.Thread.Sleep(250);
-                if (!textchanged) 
+                if (!textchanged)
                     continue;
 
                 textchanged = false;
@@ -70,7 +70,7 @@ namespace TinyPG
                 }
                 catch (Exception)
                 {
-                   
+
                 }
 
                 if (textchanged)

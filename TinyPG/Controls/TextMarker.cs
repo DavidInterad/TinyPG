@@ -65,7 +65,7 @@ namespace TinyPG.Controls
                 }
             }
 
-            if (!found) 
+            if (!found)
             {
                 ToolTip.Hide((IWin32Window)Textbox);
             }
@@ -102,12 +102,12 @@ namespace TinyPG.Controls
                     break;
             }
         }
-        
+
         public void AddWord(int wordstart, int wordlen, Color color)
         {
             AddWord(wordstart, wordlen, color, "");
         }
-        
+
         public void AddWord(int wordstart, int wordlen, Color color, string ToolTip)
         {
             Word word = new Word();
@@ -134,7 +134,7 @@ namespace TinyPG.Controls
             foreach (Word w in MarkedWords)
             {
                 // check if the marked word is currently displayed on screen
-                if (w.Start + w.Length < minpos || w.Start > maxpos) 
+                if (w.Start + w.Length < minpos || w.Start > maxpos)
                     continue;
 
                 MarkWord(w, graphics);
@@ -176,7 +176,7 @@ namespace TinyPG.Controls
             pen.Dispose();
             path.Dispose();
         }
-        
+
         #region IDisposable Members
 
         public void Dispose()

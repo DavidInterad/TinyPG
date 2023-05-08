@@ -63,18 +63,18 @@ namespace TinyPG.Compiler
             : this(null, RuleType.Choice)
         {
         }
-        
+
         public Rule(Symbol s) : this(s, s is TerminalSymbol ? RuleType.Terminal : RuleType.NonTerminal)
         {
         }
-        
+
         public Rule(RuleType type) : this(null, type)
         {
         }
-        
+
         public Rule(Symbol s, RuleType type)
         {
-            Type = type; 
+            Type = type;
             Symbol = s;
             Rules = new Rules();
         }
@@ -161,8 +161,8 @@ namespace TinyPG.Compiler
                 case RuleType.NonTerminal:
                     if (Symbol == null)
                         return true;
-                    
-                    NonTerminalSymbol nts = Symbol as NonTerminalSymbol;                    
+
+                    NonTerminalSymbol nts = Symbol as NonTerminalSymbol;
                     containsEmpty = nts.DetermineFirstTerminals();
 
                     // add first symbols of the nonterminal if not already added
@@ -213,12 +213,12 @@ namespace TinyPG.Compiler
 
                         break;
                     }
-                case RuleType.Option: 
+                case RuleType.Option:
                 case RuleType.ZeroOrMore:
                     {
                         // empty due to the nature of this rule (A? or A* can always be empty)
                         containsEmpty = true;
-                        
+
                         // if a non-empty subrule was found, then stop further parsing.
                         foreach (Rule r in Rules)
                         {

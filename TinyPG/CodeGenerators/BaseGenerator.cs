@@ -13,7 +13,7 @@ namespace TinyPG.CodeGenerators
         {
             this.templateName = templateName;
             FileName = templateName;
-            
+
         }
 
         public virtual string FileName

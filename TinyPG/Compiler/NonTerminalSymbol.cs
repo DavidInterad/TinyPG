@@ -51,7 +51,7 @@ namespace TinyPG.Compiler
         {
             // check if nonterminal has already been visited x times
             // only determine firsts x times to allow for recursion of depth x, otherwise may wind up in endless loop
-            if (visitCount > 10) 
+            if (visitCount > 10)
                 return containsEmpty;
 
             visitCount++;
@@ -60,7 +60,7 @@ namespace TinyPG.Compiler
             FirstTerminals = new Symbols();
 
             //recursion here
-            
+
             foreach (Rule rule in Rules)
             {
                 containsEmpty |= rule.DetermineFirstTerminals(FirstTerminals);

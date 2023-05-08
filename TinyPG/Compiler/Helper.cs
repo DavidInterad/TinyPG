@@ -61,7 +61,7 @@ namespace System.Text
         {
             return AddComment("//", comment);
         }
-        
+
         public static string AddComment(string commenter, string comment)
         {
 #if DEBUG
