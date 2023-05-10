@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using TinyPG;
-using TinyPG.Compiler;
+﻿using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators
 {
@@ -18,8 +13,8 @@ namespace TinyPG.CodeGenerators
         /// <summary>
         /// Generates an output file based on the grammar
         /// </summary>
-        /// <param name="grammar">the grammar object model for the langauge</param>
-        /// <param name="debug">a flag that indicates that the generated classes must implement the Debug intefaces (IParser, IParseTree or IToken). Default is false</param>
+        /// <param name="grammar">the grammar object model for the language</param>
+        /// <param name="debug">a flag that indicates that the generated classes must implement the Debug interfaces (IParser, IParseTree or IToken). Default is false</param>
         /// <returns>returns the output classes to be stored in the output file</returns>
         string Generate(Grammar grammar, bool debug);
     }

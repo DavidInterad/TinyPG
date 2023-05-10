@@ -1,6 +1,5 @@
-﻿using System;
+﻿using System.IO;
 using System.Text;
-using System.IO;
 using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators.CSharp
@@ -12,73 +11,85 @@ namespace TinyPG.CodeGenerators.CSharp
         {
         }
 
-        public string Generate(Grammar Grammar, bool Debug)
+        public string Generate(Grammar grammar, bool debug)
         {
-            if (string.IsNullOrEmpty(Grammar.GetTemplatePath()))
-                return null;
-
-            string scanner = File.ReadAllText(Grammar.GetTemplatePath() + templateName);
-
-            int counter = 2;
-            StringBuilder tokentype = new StringBuilder();
-            StringBuilder regexps = new StringBuilder();
-            StringBuilder skiplist = new StringBuilder();
-
-            foreach (TerminalSymbol s in Grammar.SkipSymbols)
+            if (string.IsNullOrEmpty(grammar.GetTemplatePath()))
             {
-                skiplist.AppendLine("            SkipList.Add(TokenType." + s.Name + ");");
+                return null;
             }
 
-            if (Grammar.FileAndLine != null)
-                skiplist.AppendLine("            FileAndLine = TokenType." + Grammar.FileAndLine.Name + ";");
+            var scanner = File.ReadAllText(grammar.GetTemplatePath() + TemplateName);
+
+            var counter = 2;
+            var tokenType = new StringBuilder();
+            var regexps = new StringBuilder();
+            var skipList = new StringBuilder();
+
+            foreach (var s in grammar.SkipSymbols)
+            {
+                skipList.AppendLine("            SkipList.Add(TokenType." + s.Name + ");");
+            }
+
+            if (grammar.FileAndLine != null)
+            {
+                skipList.AppendLine("            FileAndLine = TokenType." + grammar.FileAndLine.Name + ";");
+            }
 
             // build system tokens
-            tokentype.AppendLine("\r\n            //Non terminal tokens:");
-            tokentype.AppendLine(Helper.Outline("_NONE_", 3, "= 0,", 5));
-            tokentype.AppendLine(Helper.Outline("_UNDETERMINED_", 3, "= 1,", 5));
+            tokenType.AppendLine("\r\n            //Non terminal tokens:");
+            tokenType.AppendLine(Helper.Outline("_NONE_", 3, "= 0,", 5));
+            tokenType.AppendLine(Helper.Outline("_UNDETERMINED_", 3, "= 1,", 5));
 
             // build non terminal tokens
-            tokentype.AppendLine("\r\n            //Non terminal tokens:");
-            foreach (Symbol s in Grammar.GetNonTerminals())
+            tokenType.AppendLine("\r\n            //Non terminal tokens:");
+            foreach (var s in grammar.GetNonTerminals())
             {
-                tokentype.AppendLine(Helper.Outline(s.Name, 3, "= " + String.Format("{0:d},", counter), 5));
+                tokenType.AppendLine(Helper.Outline(s.Name, 3, $"= {counter:d},", 5));
                 counter++;
             }
 
             // build terminal tokens
-            tokentype.AppendLine("\r\n            //Terminal tokens:");
-            bool first = true;
-            foreach (TerminalSymbol s in Grammar.GetTerminals())
+            tokenType.AppendLine("\r\n            //Terminal tokens:");
+            var first = true;
+            foreach (var s in grammar.GetTerminals())
             {
-                regexps.Append("            regex = new Regex(" + s.Expression.ToString() + ", RegexOptions.Compiled");
+                regexps.Append($"            regex = new Regex({s.Expression}, RegexOptions.Compiled");
 
                 if (s.Attributes.ContainsKey("IgnoreCase"))
+                {
                     regexps.Append(" | RegexOptions.IgnoreCase");
+                }
 
                 regexps.Append(");\r\n");
 
-                regexps.Append("            Patterns.Add(TokenType." + s.Name + ", regex);\r\n");
-                regexps.Append("            Tokens.Add(TokenType." + s.Name + ");\r\n\r\n");
+                regexps.Append($"            Patterns.Add(TokenType.{s.Name}, regex);\r\n");
+                regexps.Append($"            Tokens.Add(TokenType.{s.Name});\r\n\r\n");
 
-                if (first) first = false;
-                else tokentype.AppendLine(",");
+                if (first)
+                {
+                    first = false;
+                }
+                else
+                {
+                    tokenType.AppendLine(",");
+                }
 
-                tokentype.Append(Helper.Outline(s.Name, 3, "= " + String.Format("{0:d}", counter), 5));
+                tokenType.Append(Helper.Outline(s.Name, 3, $"= {counter:d}", 5));
                 counter++;
             }
 
-            scanner = scanner.Replace(@"<%SkipList%>", skiplist.ToString());
+            scanner = scanner.Replace(@"<%SkipList%>", skipList.ToString());
             scanner = scanner.Replace(@"<%RegExps%>", regexps.ToString());
-            scanner = scanner.Replace(@"<%TokenType%>", tokentype.ToString());
+            scanner = scanner.Replace(@"<%TokenType%>", tokenType.ToString());
 
-            if (Debug)
+            if (debug)
             {
                 scanner = scanner.Replace(@"<%Namespace%>", "TinyPG.Debug");
                 scanner = scanner.Replace(@"<%IToken%>", " : TinyPG.Debug.IToken");
             }
             else
             {
-                scanner = scanner.Replace(@"<%Namespace%>", Grammar.Directives["TinyPG"]["Namespace"]);
+                scanner = scanner.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
                 scanner = scanner.Replace(@"<%IToken%>", "");
             }
 

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Linq;
+using System.Text;
 using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators.CSharp
@@ -12,24 +13,24 @@ namespace TinyPG.CodeGenerators.CSharp
 		{
 		}
 
-		public string Generate(Grammar Grammar, bool Debug)
+		public string Generate(Grammar grammar, bool debug)
 		{
-			if (string.IsNullOrEmpty(Grammar.GetTemplatePath()))
+			if (string.IsNullOrEmpty(grammar.GetTemplatePath()))
+			{
 				return null;
+			}
 
 			// generate the parser file
-			StringBuilder parsers = new StringBuilder();
-			string parser = File.ReadAllText(Grammar.GetTemplatePath() + templateName);
+			var parsers = new StringBuilder();
+			var parser = File.ReadAllText(Path.Combine(grammar.GetTemplatePath(), TemplateName));
 
 			// build non terminal tokens
-			foreach (NonTerminalSymbol s in Grammar.GetNonTerminals())
+			foreach (var method in grammar.GetNonTerminals().Select(GenerateParseMethod))
 			{
-				string method = GenerateParseMethod(s);
 				parsers.Append(method);
 			}
 
-
-			if (Debug)
+			if (debug)
 			{
 				parser = parser.Replace(@"<%Namespace%>", "TinyPG.Debug");
 				parser = parser.Replace(@"<%IParser%>", " : TinyPG.Debug.IParser");
@@ -38,7 +39,7 @@ namespace TinyPG.CodeGenerators.CSharp
 			}
 			else
 			{
-				parser = parser.Replace(@"<%Namespace%>", Grammar.Directives["TinyPG"]["Namespace"]);
+				parser = parser.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
 				parser = parser.Replace(@"<%IParser%>", "");
 				parser = parser.Replace(@"<%IParseTree%>", "ParseTree");
 			}
@@ -48,10 +49,9 @@ namespace TinyPG.CodeGenerators.CSharp
 		}
 
 		// generates the method header and body
-		private string GenerateParseMethod(NonTerminalSymbol s)
+		private static string GenerateParseMethod(NonTerminalSymbol s)
 		{
-
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 			sb.AppendLine("        private void Parse" + s.Name + "(ParseNode parent)" + Helper.AddComment("NonTerminalSymbol: " + s.Name));
 			sb.AppendLine("        {");
 			sb.AppendLine("            Token tok;");
@@ -60,8 +60,9 @@ namespace TinyPG.CodeGenerators.CSharp
 			sb.AppendLine("            parent.Nodes.Add(node);");
 			sb.AppendLine("");
 
-			foreach (Rule rule in s.Rules)
+			foreach (var rule in s.Rules)
 			{
+				// TODO check if s.Rules[0] should actually be rule
 				sb.AppendLine(GenerateProductionRuleCode(s.Rules[0], 3));
 			}
 
@@ -72,109 +73,96 @@ namespace TinyPG.CodeGenerators.CSharp
 		}
 
 		// generates the rule logic inside the method body
-		private string GenerateProductionRuleCode(Rule r, int indent)
+		private static string GenerateProductionRuleCode(Rule r, int indent)
 		{
-			int i = 0;
-			Symbols firsts = null;
-			StringBuilder sb = new StringBuilder();
-			string Indent = IndentTabs(indent);
+			int i;
+			Symbols<TerminalSymbol> firsts;
+			var sb = new StringBuilder();
+			var tabs = IndentTabs(indent);
 
 			switch (r.Type)
 			{
 				case RuleType.Terminal:
 					// expecting terminal, so scan it.
-					sb.AppendLine(Indent + "tok = scanner.Scan(TokenType." + r.Symbol.Name + ");" + Helper.AddComment("Terminal Rule: " + r.Symbol.Name));
-					sb.AppendLine(Indent + "n = node.CreateNode(tok, tok.ToString() );");
-					sb.AppendLine(Indent + "node.Token.UpdateRange(tok);");
-					sb.AppendLine(Indent + "node.Nodes.Add(n);");
-					sb.AppendLine(Indent + "if (tok.Type != TokenType." + r.Symbol.Name + ") {");
-					sb.AppendLine(Indent + "    tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected \" + TokenType." + r.Symbol.Name + ".ToString(), 0x1001, tok));");
-					sb.AppendLine(Indent + "    return;");
-					sb.AppendLine(Indent + "}");
+					sb.AppendLine($"{tabs}tok = scanner.Scan(TokenType.{r.Symbol.Name});{Helper.AddComment("Terminal Rule: " + r.Symbol.Name)}");
+					sb.AppendLine($"{tabs}n = node.CreateNode(tok, tok.ToString() );");
+					sb.AppendLine($"{tabs}node.Token.UpdateRange(tok);");
+					sb.AppendLine($"{tabs}node.Nodes.Add(n);");
+					sb.AppendLine($"{tabs}if (tok.Type != TokenType.{r.Symbol.Name}) {{");
+					sb.AppendLine($"{tabs}    tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected \" + TokenType.{r.Symbol.Name}.ToString(), 0x1001, tok));");
+					sb.AppendLine($"{tabs}    return;");
+					sb.AppendLine($"{tabs}}}");
 					break;
 				case RuleType.NonTerminal:
-					sb.AppendLine(Indent + "Parse" + r.Symbol.Name + "(node);" + Helper.AddComment("NonTerminal Rule: " + r.Symbol.Name));
+					sb.AppendLine($"{tabs}Parse{r.Symbol.Name}(node);{Helper.AddComment("NonTerminal Rule: " + r.Symbol.Name)}");
 					break;
 				case RuleType.Concat:
-					foreach (Rule rule in r.Rules)
+					foreach (var rule in r.Rules)
 					{
 						sb.AppendLine();
-						sb.AppendLine(Indent + Helper.AddComment("Concat Rule"));
+						sb.AppendLine(tabs + Helper.AddComment("Concat Rule"));
 						sb.Append(GenerateProductionRuleCode(rule, indent));
 					}
 					break;
 				case RuleType.ZeroOrMore:
 					firsts = r.GetFirstTerminals();
 					i = 0;
-					sb.Append(Indent + "tok = scanner.LookAhead(");
-					foreach (TerminalSymbol s in firsts)
+					sb.Append($"{tabs}tok = scanner.LookAhead(");
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append("TokenType." + s.Name);
-						else
-							sb.Append(", TokenType." + s.Name);
+						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(");" + Helper.AddComment("ZeroOrMore Rule"));
 
 					i = 0;
-					foreach (TerminalSymbol s in firsts)
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append(Indent + "while (tok.Type == TokenType." + s.Name);
-						else
-							sb.Append("\r\n" + Indent + "    || tok.Type == TokenType." + s.Name);
+						sb.Append(i == 0
+							? $"{tabs}while (tok.Type == TokenType.{s.Name}"
+							: $"\r\n{tabs}    || tok.Type == TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(")");
-					sb.AppendLine(Indent + "{");
+					sb.AppendLine(tabs + "{");
 
-					foreach (Rule rule in r.Rules)
+					foreach (var rule in r.Rules)
 					{
 						sb.Append(GenerateProductionRuleCode(rule, indent + 1));
 					}
 
 					i = 0;
-					sb.Append(Indent + "tok = scanner.LookAhead(");
-					foreach (TerminalSymbol s in firsts)
+					sb.Append(tabs + "tok = scanner.LookAhead(");
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append("TokenType." + s.Name);
-						else
-							sb.Append(", TokenType." + s.Name);
+						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(");" + Helper.AddComment("ZeroOrMore Rule"));
-					sb.AppendLine(Indent + "}");
+					sb.AppendLine(tabs + "}");
 					break;
 				case RuleType.OneOrMore:
-					sb.AppendLine(Indent + "do {" + Helper.AddComment("OneOrMore Rule"));
+					sb.AppendLine(tabs + "do {" + Helper.AddComment("OneOrMore Rule"));
 
-					foreach (Rule rule in r.Rules)
+					foreach (var rule in r.Rules)
 					{
 						sb.Append(GenerateProductionRuleCode(rule, indent + 1));
 					}
 
 					i = 0;
 					firsts = r.GetFirstTerminals();
-					sb.Append(Indent + "    tok = scanner.LookAhead(");
-					foreach (TerminalSymbol s in firsts)
+					sb.Append(tabs + "    tok = scanner.LookAhead(");
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append("TokenType." + s.Name);
-						else
-							sb.Append(", TokenType." + s.Name);
+						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(");" + Helper.AddComment("OneOrMore Rule"));
 
 					i = 0;
-					foreach (TerminalSymbol s in firsts)
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append(Indent + "} while (tok.Type == TokenType." + s.Name);
-						else
-							sb.Append("\r\n" + Indent + "    || tok.Type == TokenType." + s.Name);
+						sb.Append(i == 0 ? $"{tabs}}} while (tok.Type == TokenType.{s.Name}" : $"\r\n{tabs}    || tok.Type == TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(");" + Helper.AddComment("OneOrMore Rule"));
@@ -182,79 +170,73 @@ namespace TinyPG.CodeGenerators.CSharp
 				case RuleType.Option:
 					i = 0;
 					firsts = r.GetFirstTerminals();
-					sb.Append(Indent + "tok = scanner.LookAhead(");
-					foreach (TerminalSymbol s in firsts)
+					sb.Append(tabs + "tok = scanner.LookAhead(");
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append("TokenType." + s.Name);
-						else
-							sb.Append(", TokenType." + s.Name);
+						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(");" + Helper.AddComment("Option Rule"));
 
 					i = 0;
-					foreach (TerminalSymbol s in firsts)
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append(Indent + "if (tok.Type == TokenType." + s.Name);
-						else
-							sb.Append("\r\n" + Indent + "    || tok.Type == TokenType." + s.Name);
+						sb.Append(i == 0
+							? $"{tabs}if (tok.Type == TokenType.{s.Name}"
+							: $"\r\n{tabs}    || tok.Type == TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(")");
-					sb.AppendLine(Indent + "{");
+					sb.AppendLine(tabs + "{");
 
-					foreach (Rule rule in r.Rules)
+					foreach (var rule in r.Rules)
 					{
 						sb.Append(GenerateProductionRuleCode(rule, indent + 1));
 					}
-					sb.AppendLine(Indent + "}");
+					sb.AppendLine(tabs + "}");
 					break;
 				case RuleType.Choice:
 					i = 0;
 					firsts = r.GetFirstTerminals();
-					sb.Append(Indent + "tok = scanner.LookAhead(");
+					sb.Append($"{tabs}tok = scanner.LookAhead(");
 					var tokens = new List<string>();
-					foreach (TerminalSymbol s in firsts)
+					foreach (var s in firsts)
 					{
-						if (i == 0)
-							sb.Append("TokenType." + s.Name);
-						else
-							sb.Append(", TokenType." + s.Name);
+						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
 						i++;
-
 						tokens.Add(s.Name);
 					}
 					string expectedTokens;
-					if (tokens.Count == 1)
-						expectedTokens = tokens[0];
-					else if (tokens.Count == 2)
-						expectedTokens = tokens[0] + " or " + tokens[1];
-					else
+					switch (tokens.Count)
 					{
-						expectedTokens = string.Join(", ", tokens.GetRange(0, tokens.Count - 1).ToArray());
-						expectedTokens += ", or " + tokens[tokens.Count - 1];
+						case 1:
+							expectedTokens = tokens[0];
+							break;
+						case 2:
+							expectedTokens = $"{tokens[0]} or {tokens[1]}";
+							break;
+						default:
+							expectedTokens = string.Join(", ", tokens.GetRange(0, tokens.Count - 1).ToArray());
+							expectedTokens += ", or " + tokens[tokens.Count - 1];
+							break;
 					}
 					sb.AppendLine(");" + Helper.AddComment("Choice Rule"));
 
-					sb.AppendLine(Indent + "switch (tok.Type)");
-					sb.AppendLine(Indent + "{" + Helper.AddComment("Choice Rule"));
-					foreach (Rule rule in r.Rules)
+					sb.AppendLine(tabs + "switch (tok.Type)");
+					sb.AppendLine(tabs + "{" + Helper.AddComment("Choice Rule"));
+					foreach (var rule in r.Rules)
 					{
-						foreach (TerminalSymbol s in rule.GetFirstTerminals())
+						foreach (var s in rule.GetFirstTerminals())
 						{
-							sb.AppendLine(Indent + "    case TokenType." + s.Name + ":");
+							sb.AppendLine($"{tabs}    case TokenType.{s.Name}:");
 						}
 						sb.Append(GenerateProductionRuleCode(rule, indent + 2));
-						sb.AppendLine(Indent + "        break;");
+						sb.AppendLine(tabs + "        break;");
 					}
-					sb.AppendLine(Indent + "    default:");
-					sb.AppendLine(Indent + "        tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected " + expectedTokens + ".\", 0x0002, tok));");
-					sb.AppendLine(Indent + "        break;");
-					sb.AppendLine(Indent + "}" + Helper.AddComment("Choice Rule"));
-					break;
-				default:
+					sb.AppendLine(tabs + "    default:");
+					sb.AppendLine(tabs + "        tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected " + expectedTokens + ".\", 0x0002, tok));");
+					sb.AppendLine(tabs + "        break;");
+					sb.AppendLine(tabs + "}" + Helper.AddComment("Choice Rule"));
 					break;
 			}
 			return sb.ToString();
@@ -263,9 +245,11 @@ namespace TinyPG.CodeGenerators.CSharp
 		// replaces tabs by spaces, so outlining is more consistent
 		public static string IndentTabs(int indent)
 		{
-			string t = "";
-			for (int i = 0; i < indent; i++)
+			var t = "";
+			for (var i = 0; i < indent; i++)
+			{
 				t += "    ";
+			}
 
 			return t;
 		}

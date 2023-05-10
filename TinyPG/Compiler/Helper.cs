@@ -7,9 +7,6 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 // extends the System.Text namespace
 namespace System.Text
@@ -18,35 +15,35 @@ namespace System.Text
     /// some handy to use static helper functions
     /// Note that this class is used by the TinyTG.Compiler classes for string formatting
     /// </summary>
-    public sealed class Helper
+    public static class Helper
     {
-        private Helper()
-        {
-        }
-
         public static string Reverse(string text)
         {
-            char[] charArray = new char[text.Length];
-            int len = text.Length - 1;
-            for (int i = 0; i <= len; i++)
+            var charArray = new char[text.Length];
+            var len = text.Length - 1;
+            for (var i = 0; i <= len; i++)
+            {
                 charArray[i] = text[len - i];
+            }
             return new string(charArray);
         }
 
         public static string Outline(string text1, int indent1, string text2, int indent2)
         {
-            string r = Indent(indent1);
+            var r = Indent(indent1);
             r += text1;
             r = r.PadRight((indent2 * 4)%256, ' ');
             r += text2;
             return r;
         }
 
-        public static string Indent(int indentcount)
+        public static string Indent(int indentCount)
         {
-            string t = "";
-            for (int i = 0; i < indentcount; i++)
+            var t = "";
+            for (var i = 0; i < indentCount; i++)
+            {
                 t += "    ";
+            }
 
             return t;
         }

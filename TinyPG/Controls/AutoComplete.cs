@@ -7,15 +7,17 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
+using System.ComponentModel;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
 
 namespace TinyPG.Controls
 {
-    public partial class AutoComplete : Form
+    public class AutoComplete : Form
     {
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern int SendMessage(IntPtr hWnd, int wMsg, char wParam, IntPtr lParam);
@@ -23,45 +25,54 @@ namespace TinyPG.Controls
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private readonly IContainer components = null;
 
 
         private const int WM_KEYDOWN = 0x100;
-        private RichTextBox textEditor;
+        private readonly RichTextBox _textEditor;
 
-        // suppresses displaying the autocompletion screen while value > 0
-        private int suppress;
-        private int autocompletestart;
+        // suppresses displaying the auto-completion screen while value > 0
+        private int _suppress;
+        private int _autocompleteStart;
 
-        // wordlist to show in the autocompletion list
+        // word list to show in the auto-completion list
         public ListBox WordList;
 
         protected override void OnEnabledChanged(EventArgs e)
         {
             base.OnEnabledChanged(e);
-            if (!Enabled) 
+            if (!Enabled)
+            {
                 Visible = false;
+            }
         }
 
         public AutoComplete(RichTextBox editor)
         {
-            this.textEditor = editor;
-            this.textEditor.KeyDown += new KeyEventHandler(editor_KeyDown);
-            this.textEditor.KeyUp += new KeyEventHandler(textEditor_KeyUp);
-            this.textEditor.LostFocus += new EventHandler(textEditor_LostFocus);
+            _textEditor = editor;
+            _textEditor.KeyDown += editor_KeyDown;
+            _textEditor.KeyUp += textEditor_KeyUp;
+            _textEditor.LostFocus += textEditor_LostFocus;
 
             InitializeComponent();
         }
 
-        void textEditor_LostFocus(object sender, EventArgs e)
+        private void textEditor_LostFocus(object sender, EventArgs e)
         {
-            if (textEditor.Focused || this.Focused || WordList.Focused) return;
-            this.Visible = false;
+            if (_textEditor.Focused || Focused || WordList.Focused)
+            {
+                return;
+            }
+
+            Visible = false;
         }
 
-        void editor_KeyDown(object sender, KeyEventArgs e)
+        private void editor_KeyDown(object sender, KeyEventArgs e)
         {
-            if (!this.Enabled) return;
+            if (!Enabled)
+            {
+                return;
+            }
 
             if (e.KeyValue == 32)
             {
@@ -71,86 +82,100 @@ namespace TinyPG.Controls
                     e.SuppressKeyPress = true;
                 }
 
-                if (suppress > 0)
-                    suppress--;
+                if (_suppress > 0)
+                {
+                    _suppress--;
+                }
             }
 
             if (e.Control && e.KeyValue != 32)
-                suppress = 2;
+            {
+                _suppress = 2;
+            }
 
-            if (e.KeyValue == 27 && this.Visible)
-                suppress = 2;
+            if (e.KeyValue == 27 && Visible)
+            {
+                _suppress = 2;
+            }
 
 
-            if (this.Visible)
+            if (Visible)
             {
                 // PgUp, PgDn, Up, Down
-                if ((e.KeyValue == 33) || (e.KeyValue == 34) || (e.KeyValue == 38) || (e.KeyValue == 40))
+                if (e.KeyValue == 33 || e.KeyValue == 34 || e.KeyValue == 38 || e.KeyValue == 40)
                 {
-                    this.SendKey((char)e.KeyValue);
+                    SendKey((char)e.KeyValue);
                     e.Handled = true;
                 }
-            }           
+            }
         }
 
-        void textEditor_KeyUp(object sender, KeyEventArgs e)
+        private void textEditor_KeyUp(object sender, KeyEventArgs e)
         {
-            if (!this.Enabled) return;
+            if (!Enabled) return;
 
             try
             {
                 if ((e.KeyValue == 32 && !e.Control) || e.KeyValue == 13 || e.KeyValue == 27)
                 {
-                    this.Visible = false;
+                    Visible = false;
                 }
-                else if ((((e.KeyValue > 64 && e.KeyValue < 91)) && !e.Control) || (e.KeyValue == 32 && e.Control))
+                else if ((e.KeyValue > 64 && e.KeyValue < 91 && !e.Control) || (e.KeyValue == 32 && e.Control))
                 {
-                    if (!this.Visible)
+                    if (!Visible)
                     {
+                        var line = _textEditor.GetFirstCharIndexOfCurrentLine();
+                        var t = Helper.Reverse(_textEditor.Text.Substring(line, _textEditor.SelectionStart - line));
 
-                        int line = textEditor.GetFirstCharIndexOfCurrentLine();
-                        string t = Helper.Reverse(textEditor.Text.Substring(line, textEditor.SelectionStart - line));
-                        
                         // scan the line of text for any of these characters. these mark the beginning of the word
-                        int i = t.IndexOfAny(" \r\n\t.;:\\/?><-=~`[]{}+!#$%^&*()".ToCharArray());
-                        if (i < 0) i = t.Length;
-                        autocompletestart = textEditor.SelectionStart - i;
-                        textEditor.Text.IndexOfAny(" \t\r\n".ToCharArray());
-                        Point p = textEditor.GetPositionFromCharIndex(autocompletestart);
-                        p = textEditor.PointToScreen(p);
+                        var i = t.IndexOfAny(" \r\n\t.;:\\/?><-=~`[]{}+!#$%^&*()".ToCharArray());
+                        if (i < 0)
+                        {
+                            i = t.Length;
+                        }
+
+                        _autocompleteStart = _textEditor.SelectionStart - i;
+                        _textEditor.Text.IndexOfAny(" \t\r\n".ToCharArray());
+                        var p = _textEditor.GetPositionFromCharIndex(_autocompleteStart);
+                        p = _textEditor.PointToScreen(p);
                         p.X -= 8;
                         p.Y += 22;
 
-                        // only show autocompletion dialog if user has typed in the first characters, or if 
+                        // only show auto-completion dialog if user has typed in the first characters, or if
                         // the user pressed CTRL-Space explicitly
-                        if (((textEditor.SelectionStart - autocompletestart) > 0 && (suppress <= 0)) || (e.KeyValue == 32 && e.Control))
+                        if ((_textEditor.SelectionStart - _autocompleteStart > 0 && _suppress <= 0) || (e.KeyValue == 32 && e.Control))
                         {
-                            this.Location = p;
-                            this.Visible = this.Enabled; // only display if enabled
-                            textEditor.Focus();
+                            Location = p;
+                            Visible = Enabled; // only display if enabled
+                            _textEditor.Focus();
                         }
                     }
 
                     //pre-select a word from the list that begins with the typed characters
-                    WordList.SelectedIndex = WordList.FindString(textEditor.Text.Substring(autocompletestart, textEditor.SelectionStart - autocompletestart));
+                    WordList.SelectedIndex = WordList.FindString(_textEditor.Text.Substring(_autocompleteStart, _textEditor.SelectionStart - _autocompleteStart));
 
                 }
-                else if (this.Visible)
+                else if (Visible)
                 {
                     if (e.KeyValue == 9 && !e.Alt && !e.Control && !e.Shift) // tab key
                     {
                         SelectCurrentWord();
                         e.Handled = true;
                     }
-                    
-                    if (textEditor.SelectionStart < autocompletestart)
-                        this.Visible = false;   
-                    if ((e.KeyValue == 33) || (e.KeyValue == 34) || (e.KeyValue == 38) || (e.KeyValue == 40))
+
+                    if (_textEditor.SelectionStart < _autocompleteStart)
+                    {
+                        Visible = false;
+                    }
+                    if (e.KeyValue == 33 || e.KeyValue == 34 || e.KeyValue == 38 || e.KeyValue == 40)
                     {
                         return;
                     }
-                    if (this.Visible)
-                        WordList.SelectedIndex = WordList.FindString(textEditor.Text.Substring(autocompletestart, textEditor.SelectionStart - autocompletestart));
+
+                    if (Visible)
+                    {
+                        WordList.SelectedIndex = WordList.FindString(_textEditor.Text.Substring(_autocompleteStart, _textEditor.SelectionStart - _autocompleteStart));
+                    }
                 }
             }
             catch (Exception ex)
@@ -161,13 +186,15 @@ namespace TinyPG.Controls
 
         private void SelectCurrentWord()
         {
-            this.Visible = false;
-            if (this.WordList.SelectedItem == null)
+            Visible = false;
+            if (WordList.SelectedItem == null)
+            {
                 return;
+            }
 
-            int temp = textEditor.SelectionStart;
-            textEditor.Select(autocompletestart, temp-autocompletestart) ;
-            textEditor.SelectedText = this.WordList.SelectedItem.ToString();
+            var temp = _textEditor.SelectionStart;
+            _textEditor.Select(_autocompleteStart, temp-_autocompleteStart) ;
+            _textEditor.SelectedText = WordList.SelectedItem.ToString();
         }
 
         private void SendKey(char key)
@@ -175,17 +202,21 @@ namespace TinyPG.Controls
             SendMessage(WordList.Handle, WM_KEYDOWN, key, IntPtr.Zero);
         }
 
-        void AutoComplete_KeyUp(object sender, KeyEventArgs e)
+        private void AutoComplete_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.KeyValue == 32 || e.KeyValue == 27 || e.KeyValue == 13 || e.KeyValue == 9)
-                this.Visible = false;
+            {
+                Visible = false;
+            }
 
             if (e.KeyValue == 9 || e.KeyValue == 13)
+            {
                 SelectCurrentWord();
+            }
         }
 
         // user selects a word using double click
-        void WordList_DoubleClick(object sender, EventArgs e)
+        private void WordList_DoubleClick(object sender, EventArgs e)
         {
             SelectCurrentWord();
         }
@@ -196,10 +227,11 @@ namespace TinyPG.Controls
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing && components != null)
             {
                 components.Dispose();
             }
+
             base.Dispose(disposing);
         }
 
@@ -209,41 +241,40 @@ namespace TinyPG.Controls
         /// </summary>
         private void InitializeComponent()
         {
-            this.WordList = new System.Windows.Forms.ListBox();
-            this.SuspendLayout();
-            // 
+            WordList = new ListBox();
+            SuspendLayout();
+            //
             // WordList
-            // 
-            this.WordList.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.WordList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.WordList.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.WordList.FormattingEnabled = true;
-            this.WordList.ItemHeight = 15;
-            this.WordList.Location = new System.Drawing.Point(0, 0);
-            this.WordList.Name = "WordList";
-            this.WordList.Size = new System.Drawing.Size(303, 137);
-            this.WordList.Sorted = true;
-            this.WordList.TabIndex = 0;
-            this.WordList.UseTabStops = false;
-            this.WordList.DoubleClick += new System.EventHandler(this.WordList_DoubleClick);
-            // 
+            //
+            WordList.BorderStyle = BorderStyle.FixedSingle;
+            WordList.Dock = DockStyle.Fill;
+            WordList.Font = new Font("Segoe UI", 9F);
+            WordList.FormattingEnabled = true;
+            WordList.ItemHeight = 15;
+            WordList.Location = new Point(0, 0);
+            WordList.Name = "WordList";
+            WordList.Size = new Size(303, 137);
+            WordList.Sorted = true;
+            WordList.TabIndex = 0;
+            WordList.UseTabStops = false;
+            WordList.DoubleClick += WordList_DoubleClick;
+            //
             // AutoComplete
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(303, 141);
-            this.ControlBox = false;
-            this.Controls.Add(this.WordList);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
-            this.KeyPreview = true;
-            this.Name = "AutoComplete";
-            this.ShowIcon = false;
-            this.ShowInTaskbar = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.TopMost = true;
-            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.AutoComplete_KeyUp);
-            this.ResumeLayout(false);
-
+            //
+            AutoScaleDimensions = new SizeF(6F, 13F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(303, 141);
+            ControlBox = false;
+            Controls.Add(WordList);
+            FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            KeyPreview = true;
+            Name = "AutoComplete";
+            ShowIcon = false;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.Manual;
+            TopMost = true;
+            KeyUp += AutoComplete_KeyUp;
+            ResumeLayout(false);
         }
     }
 }

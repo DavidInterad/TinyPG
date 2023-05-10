@@ -7,24 +7,26 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace TinyPG.Controls
 {
     /// <summary>
-    /// the text marker is responsible for underlining erronious text (= marked words) with a wavy line
+    /// the text marker is responsible for underlining erroneous text (= marked words) with a wavy line
     /// the text marker also handles the display of the tooltip
     /// </summary>
     public sealed class TextMarker : NativeWindow, IDisposable
     {
-        public RichTextBox Textbox;
-        private List<Word> MarkedWords;
-        private ToolTip ToolTip;
-        private Point lastMousePos;
+        public RichTextBox TextBox;
+        private List<Word> _markedWords;
+        private readonly ToolTip _toolTip;
+        private Point _lastMousePos;
 
         private struct Word
         {
@@ -34,40 +36,44 @@ namespace TinyPG.Controls
             public string ToolTip;
         }
 
-        public TextMarker(RichTextBox textbox)
+        public TextMarker(RichTextBox textBox)
         {
-            Textbox = textbox;
-            Textbox.MouseMove += new MouseEventHandler(Textbox_MouseMove);
-            this.AssignHandle(Textbox.Handle);
-            ToolTip = new ToolTip();
+            TextBox = textBox;
+            TextBox.MouseMove += TextBoxMouseMove;
+            AssignHandle(TextBox.Handle);
+            _toolTip = new ToolTip();
             Clear();
-            lastMousePos = new Point();
+            _lastMousePos = new Point();
         }
 
-        void Textbox_MouseMove(object sender, MouseEventArgs e)
+        void TextBoxMouseMove(object sender, MouseEventArgs e)
         {
-            if (lastMousePos.X == e.X || lastMousePos.Y == e.Y)
-                return;
-
-            lastMousePos = new Point(e.X, e.Y);
-            int i = Textbox.GetCharIndexFromPosition(lastMousePos);
-
-            bool found = false;
-            foreach (Word w in MarkedWords)
+            if (_lastMousePos.X == e.X || _lastMousePos.Y == e.Y)
             {
-                if (w.Start <= i && w.Start + w.Length > i)
-                {
-                    Point p = Textbox.GetPositionFromCharIndex(w.Start);
-                    p.Y += 18;
+                return;
+            }
 
-                    ToolTip.Show(w.ToolTip, (IWin32Window)Textbox, p);
-                    found = true;
+            _lastMousePos = new Point(e.X, e.Y);
+            var i = TextBox.GetCharIndexFromPosition(_lastMousePos);
+
+            var found = false;
+            foreach (var w in _markedWords)
+            {
+                if (w.Start > i || w.Start + w.Length <= i)
+                {
+                    continue;
                 }
+
+                var p = TextBox.GetPositionFromCharIndex(w.Start);
+                p.Y += 18;
+
+                _toolTip.Show(w.ToolTip, TextBox, p);
+                found = true;
             }
 
             if (!found)
             {
-                ToolTip.Hide((IWin32Window)Textbox);
+                _toolTip.Hide(TextBox);
             }
         }
 
@@ -103,40 +109,38 @@ namespace TinyPG.Controls
             }
         }
 
-        public void AddWord(int wordstart, int wordlen, Color color)
+        public void AddWord(int wordStart, int wordLen, Color color)
         {
-            AddWord(wordstart, wordlen, color, "");
+            AddWord(wordStart, wordLen, color, "");
         }
 
-        public void AddWord(int wordstart, int wordlen, Color color, string ToolTip)
+        public void AddWord(int wordStart, int wordLen, Color color, string toolTip)
         {
-            Word word = new Word();
-            word.Start = wordstart;
-            word.Length = wordlen;
-            word.Color = color;
-            word.ToolTip = ToolTip;
-            MarkedWords.Add(word);
+            var word = new Word
+            {
+                Start = wordStart,
+                Length = wordLen,
+                Color = color,
+                ToolTip = toolTip,
+            };
+            _markedWords.Add(word);
         }
 
         public void Clear()
         {
-            MarkedWords = new List<Word>();
+            _markedWords = new List<Word>();
         }
 
         public void MarkWords()
         {
-            if (Textbox.IsDisposed || !Textbox.Enabled || !Textbox.Visible) return;
+            if (TextBox.IsDisposed || !TextBox.Enabled || !TextBox.Visible) return;
 
-            Graphics graphics = Textbox.CreateGraphics();
+            var graphics = TextBox.CreateGraphics();
 
-            int minpos = Textbox.GetCharIndexFromPosition(new Point(0, 0));
-            int maxpos = Textbox.GetCharIndexFromPosition(new Point(Textbox.Width, Textbox.Height));
-            foreach (Word w in MarkedWords)
+            var minPos = TextBox.GetCharIndexFromPosition(new Point(0, 0));
+            var maxPos = TextBox.GetCharIndexFromPosition(new Point(TextBox.Width, TextBox.Height));
+            foreach (var w in _markedWords.Where(w => w.Start + w.Length >= minPos && w.Start <= maxPos))
             {
-                // check if the marked word is currently displayed on screen
-                if (w.Start + w.Length < minpos || w.Start > maxpos)
-                    continue;
-
                 MarkWord(w, graphics);
             }
             graphics.Dispose();
@@ -144,11 +148,11 @@ namespace TinyPG.Controls
 
         private void MarkWord(Word word, Graphics graphics)
         {
-            GraphicsPath path = new GraphicsPath();
+            var path = new GraphicsPath();
 
-            List<Point> points = new List<Point>();
-            Point p1 = Textbox.GetPositionFromCharIndex(word.Start);
-            Point p2 = Textbox.GetPositionFromCharIndex(word.Start + word.Length);
+            var points = new List<Point>();
+            var p1 = TextBox.GetPositionFromCharIndex(word.Start);
+            var p2 = TextBox.GetPositionFromCharIndex(word.Start + word.Length);
 
             if (word.Length == 0)
             {
@@ -156,12 +160,12 @@ namespace TinyPG.Controls
                 p2.X += 5;
             }
 
-            p1.Y += Textbox.Font.Height - 2;
+            p1.Y += TextBox.Font.Height - 2;
             points.Add(p1);
-            bool up = true;
-            for (int x = p1.X + 2; x < p2.X + 2; x += 2)
+            var up = true;
+            for (var x = p1.X + 2; x < p2.X + 2; x += 2)
             {
-                Point p = up ? new Point(x, p1.Y + 2) : new Point(x, p1.Y);
+                var p = up ? new Point(x, p1.Y + 2) : new Point(x, p1.Y);
                 points.Add(p);
                 up = !up;
             }
@@ -171,7 +175,7 @@ namespace TinyPG.Controls
                 path.AddLines(points.ToArray());
             }
 
-            Pen pen = new Pen(word.Color);
+            var pen = new Pen(word.Color);
             graphics.DrawPath(pen, path);
             pen.Dispose();
             path.Dispose();
@@ -181,7 +185,7 @@ namespace TinyPG.Controls
 
         public void Dispose()
         {
-            this.ReleaseHandle();
+            ReleaseHandle();
         }
 
         #endregion

@@ -7,20 +7,21 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
-using System.Collections.Generic;
-using System.Text;
-using TinyPG.Controls;
+using System.Drawing;
+using System.Threading;
 using TinyPG.Compiler;
+using TinyPG.Controls;
 
 namespace TinyPG
 {
     public sealed class SyntaxChecker : IDisposable
     {
-        private TextMarker marker;
-        private bool disposing;
-        private string text;
-        private bool textchanged;
+        private readonly TextMarker _marker;
+        private bool _disposing;
+        private string _text;
+        private bool _textChanged;
 
         // used by the checker to check the syntax of the grammar while editing
         public ParseTree SyntaxTree { get; set; }
@@ -33,35 +34,40 @@ namespace TinyPG
         public SyntaxChecker(TextMarker marker)
         {
             UpdateSyntax = null;
-            this.marker = marker;
-            disposing = false;
+            _marker = marker;
+            _disposing = false;
         }
 
         public void Start()
         {
-            Scanner scanner = new Scanner();
-            Parser parser = new Parser(scanner);
+            var scanner = new Scanner();
+            var parser = new Parser(scanner);
 
-            while (!disposing)
+            while (!_disposing)
             {
-                System.Threading.Thread.Sleep(250);
-                if (!textchanged)
+                Thread.Sleep(250);
+                if (!_textChanged)
+                {
                     continue;
+                }
 
-                textchanged = false;
+                _textChanged = false;
 
-                scanner.Init(text);
-                SyntaxTree = parser.Parse(text, "", new GrammarTree());
+                scanner.Init(_text);
+                SyntaxTree = parser.Parse(_text, "", new GrammarTree());
                 if (SyntaxTree.Errors.Count > 0)
+                {
                     SyntaxTree.Errors.Clear();
+                }
 
                 try
                 {
                     if (Grammar == null)
+                    {
                         Grammar = (Grammar)SyntaxTree.Eval();
+                    }
                     else
                     {
-
                         lock (Grammar)
                         {
                             Grammar = (Grammar)SyntaxTree.Eval();
@@ -70,37 +76,38 @@ namespace TinyPG
                 }
                 catch (Exception)
                 {
-
+                    // ignored
                 }
 
-                if (textchanged)
-                    continue;
-
-                lock (marker)
+                if (_textChanged)
                 {
-                    marker.Clear();
-                    foreach (ParseError err in SyntaxTree.Errors)
+                    continue;
+                }
+
+                lock (_marker)
+                {
+                    _marker.Clear();
+                    foreach (var err in SyntaxTree.Errors)
                     {
-                        marker.AddWord(err.Position, err.Length, System.Drawing.Color.Red, err.Message);
+                        _marker.AddWord(err.Position, err.Length, Color.Red, err.Message);
                     }
                 }
 
-                if (UpdateSyntax != null)
-                    UpdateSyntax.Invoke(this, new EventArgs());
+                UpdateSyntax?.Invoke(this, EventArgs.Empty);
             }
         }
 
         public void Check(string text)
         {
-            this.text = text;
-            textchanged = true;
+            _text = text;
+            _textChanged = true;
         }
 
         #region IDisposable Members
 
         public void Dispose()
         {
-            disposing = true;
+            _disposing = true;
         }
 
         #endregion

@@ -1,7 +1,7 @@
-﻿using System.Text;
-using System.IO;
-using TinyPG.Compiler;
+﻿using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
+using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators.CSharp
 {
@@ -12,73 +12,79 @@ namespace TinyPG.CodeGenerators.CSharp
         {
         }
 
-        public string Generate(Grammar Grammar, bool Debug)
+        public string Generate(Grammar grammar, bool debug)
         {
-            if (string.IsNullOrEmpty(Grammar.GetTemplatePath()))
+            if (string.IsNullOrEmpty(grammar.GetTemplatePath()))
+            {
                 return null;
+            }
 
             // copy the parse tree file (optionally)
-            string parsetree = File.ReadAllText(Grammar.GetTemplatePath() + templateName);
+            var parseTree = File.ReadAllText(grammar.GetTemplatePath() + TemplateName);
 
-            StringBuilder evalsymbols = new StringBuilder();
-            StringBuilder evalmethods = new StringBuilder();
+            var evalSymbols = new StringBuilder();
+            var evalMethods = new StringBuilder();
 
             // build non terminal tokens
-            foreach (Symbol s in Grammar.GetNonTerminals())
+            foreach (var s in grammar.GetNonTerminals())
             {
-                evalsymbols.AppendLine("                case TokenType." + s.Name + ":");
-                evalsymbols.AppendLine("                    Value = Eval" + s.Name + "(tree, paramlist);");
-                //evalsymbols.AppendLine("                Value = Token.Text;");
-                evalsymbols.AppendLine("                    break;");
+                evalSymbols.AppendLine("                case TokenType." + s.Name + ":");
+                evalSymbols.AppendLine("                    Value = Eval" + s.Name + "(tree, paramList);");
+                //evalSymbols.AppendLine("                Value = Token.Text;");
+                evalSymbols.AppendLine("                    break;");
 
-                evalmethods.AppendLine("        protected virtual object Eval" + s.Name + "(ParseTree tree, params object[] paramlist)");
-                evalmethods.AppendLine("        {");
+                evalMethods.AppendLine("        protected virtual object Eval" + s.Name + "(ParseTree tree, params object[] paramList)");
+                evalMethods.AppendLine("        {");
                 if (s.CodeBlock != null)
                 {
                     // paste user code here
-                    evalmethods.AppendLine(FormatCodeBlock(s as NonTerminalSymbol));
+                    evalMethods.AppendLine(FormatCodeBlock(s));
                 }
                 else
                 {
                     if (s.Name == "Start") // return a nice warning message from root object.
-                        evalmethods.AppendLine("            return \"Could not interpret input; no semantics implemented.\";");
+                    {
+                        evalMethods.AppendLine("            return \"Could not interpret input; no semantics implemented.\";");
+                    }
                     else
-                        evalmethods.AppendLine("            foreach (var node in Nodes)\r\n" +
-                                               "                node.Eval(tree, paramlist);\r\n" +
+                    {
+                        evalMethods.AppendLine("            foreach (var node in Nodes)\r\n" +
+                                               "                node.Eval(tree, paramList);\r\n" +
                                                "            return null;");
+                    }
 
                     // otherwise simply not implemented!
                 }
-                evalmethods.AppendLine("        }\r\n");
+                evalMethods.AppendLine("        }\r\n");
             }
 
-            if (Debug)
+            if (debug)
             {
-                parsetree = parsetree.Replace(@"<%Namespace%>", "TinyPG.Debug");
-                parsetree = parsetree.Replace(@"<%ParseError%>", " : TinyPG.Debug.IParseError");
-                parsetree = parsetree.Replace(@"<%ParseErrors%>", "List<TinyPG.Debug.IParseError>");
-                parsetree = parsetree.Replace(@"<%IParseTree%>", ", TinyPG.Debug.IParseTree");
-                parsetree = parsetree.Replace(@"<%IParseNode%>", " : TinyPG.Debug.IParseNode");
-                parsetree = parsetree.Replace(@"<%ITokenGet%>", "public IToken IToken { get {return (IToken)Token;} }");
+                parseTree = parseTree.Replace(@"<%Namespace%>", "TinyPG.Debug");
+                parseTree = parseTree.Replace(@"<%ParseError%>", " : TinyPG.Debug.IParseError");
+                parseTree = parseTree.Replace(@"<%ParseErrors%>", "List<TinyPG.Debug.IParseError>");
+                parseTree = parseTree.Replace(@"<%IParseTree%>", ", TinyPG.Debug.IParseTree");
+                parseTree = parseTree.Replace(@"<%IParseNode%>", " : TinyPG.Debug.IParseNode");
+                parseTree = parseTree.Replace(@"<%ITokenGet%>", "public IToken IToken { get {return (IToken)Token;} }");
 
-                string inodes = "public List<IParseNode> INodes {get { return nodes.ConvertAll<IParseNode>( new Converter<ParseNode, IParseNode>( delegate(ParseNode n) { return (IParseNode)n; })); }}\r\n\r\n";
-                parsetree = parsetree.Replace(@"<%INodesGet%>", inodes);
+                const string iNodes = "public List<IParseNode> INodes {get { return nodes.ConvertAll<IParseNode>( new Converter<ParseNode, IParseNode>( delegate(ParseNode n) { return (IParseNode)n; })); }}\r\n\r\n";
+                parseTree = parseTree.Replace(@"<%INodesGet%>", iNodes);
             }
             else
             {
-                parsetree = parsetree.Replace(@"<%Namespace%>", Grammar.Directives["TinyPG"]["Namespace"]);
-                parsetree = parsetree.Replace(@"<%ParseError%>", "");
-                parsetree = parsetree.Replace(@"<%ParseErrors%>", "List<ParseError>");
-                parsetree = parsetree.Replace(@"<%IParseTree%>", "");
-                parsetree = parsetree.Replace(@"<%IParseNode%>", "");
-                parsetree = parsetree.Replace(@"<%ITokenGet%>", "");
-                parsetree = parsetree.Replace(@"<%INodesGet%>", "");
+                parseTree = parseTree.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
+                parseTree = parseTree.Replace(@"<%ParseError%>", "");
+                parseTree = parseTree.Replace(@"<%ParseErrors%>", "List<ParseError>");
+                parseTree = parseTree.Replace(@"<%IParseTree%>", "");
+                parseTree = parseTree.Replace(@"<%IParseNode%>", "");
+                parseTree = parseTree.Replace(@"<%ITokenGet%>", "");
+                parseTree = parseTree.Replace(@"<%INodesGet%>", "");
             }
 
-            parsetree = parsetree.Replace(@"<%EvalSymbols%>", evalsymbols.ToString());
-            parsetree = parsetree.Replace(@"<%VirtualEvalMethods%>", evalmethods.ToString());
+            parseTree = parseTree.Replace(@"<%EvalSymbols%>", evalSymbols.ToString());
+            parseTree = parseTree.Replace(@"<%VirtualEvalMethods%>", evalMethods.ToString());
 
-            return parsetree;
+            return parseTree;
         }
 
         /// <summary>
@@ -87,34 +93,38 @@ namespace TinyPG.CodeGenerators.CSharp
         /// errors are added to the Error object.
         /// </summary>
         /// <param name="nts">non terminal and its production rule</param>
-        /// <returns>a formated codeblock</returns>
-        private string FormatCodeBlock(NonTerminalSymbol nts)
+        /// <returns>a formatted codeblock</returns>
+        private static string FormatCodeBlock(NonTerminalSymbol nts)
         {
-            string codeblock = nts.CodeBlock;
-            if (nts == null) return "";
+            if (nts == null)
+            {
+                return "";
+            }
 
-            Regex var = new Regex(@"\$(?<var>[a-zA-Z_0-9]+)(\[(?<index>[^]]+)\])?", RegexOptions.Compiled);
+            var codeblock = nts.CodeBlock;
 
-            Symbols symbols = nts.DetermineProductionSymbols();
+            var var = new Regex(@"\$(?<var>[a-zA-Z_0-9]+)(\[(?<index>[^]]+)\])?", RegexOptions.Compiled);
+
+            var symbols = nts.DetermineProductionSymbols();
 
 
-            Match match = var.Match(codeblock);
+            var match = var.Match(codeblock);
             while (match.Success)
             {
-                Symbol s = symbols.Find(match.Groups["var"].Value);
+                var s = symbols.Find(match.Groups["var"].Value);
                 if (s == null)
                 {
                     //TOD: handle error situation
                     //Errors.Add("Variable $" + match.Groups["var"].Value + " cannot be matched.");
                     break; // error situation
                 }
-                string indexer = "0";
+                var indexer = "0";
                 if (match.Groups["index"].Value.Length > 0)
                 {
                     indexer = match.Groups["index"].Value;
                 }
 
-                string replacement = "this.GetValue(tree, TokenType." + s.Name + ", " + indexer + ")";
+                var replacement = "this.GetValue(tree, TokenType." + s.Name + ", " + indexer + ")";
 
                 codeblock = codeblock.Substring(0, match.Captures[0].Index) + replacement + codeblock.Substring(match.Captures[0].Index + match.Captures[0].Length);
                 match = var.Match(codeblock);
@@ -124,5 +134,4 @@ namespace TinyPG.CodeGenerators.CSharp
             return codeblock;
         }
     }
-
 }

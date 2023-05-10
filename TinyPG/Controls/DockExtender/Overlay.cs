@@ -7,10 +7,8 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
-using System;
-using System.Collections.Generic;
+
 using System.ComponentModel;
-using System.Text;
 using System.Windows.Forms;
 
 namespace TinyPG.Controls
@@ -32,7 +30,7 @@ namespace TinyPG.Controls
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private readonly IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -40,10 +38,11 @@ namespace TinyPG.Controls
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing && components != null)
             {
                 components.Dispose();
             }
+
             base.Dispose(disposing);
         }
 
@@ -56,9 +55,9 @@ namespace TinyPG.Controls
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            // 
+            //
             // Overlay
-            // 
+            //
             this.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.ControlBox = false;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;

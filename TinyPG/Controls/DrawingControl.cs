@@ -4,10 +4,10 @@ using System.Windows.Forms;
 
 namespace TinyPG.Controls
 {
-    class DrawingControl
+    internal class DrawingControl
     {
         [DllImport("user32.dll")]
-        public static extern int SendMessage(IntPtr hWnd, Int32 wMsg, bool wParam, Int32 lParam);
+        public static extern int SendMessage(IntPtr hWnd, int wMsg, bool wParam, int lParam);
 
         private const int WM_SETREDRAW = 11;
 

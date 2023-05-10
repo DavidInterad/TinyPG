@@ -7,49 +7,40 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
-using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Drawing;
 using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace TinyPG.Controls
 {
-    [ProvideProperty("Dockable", typeof(Panel))]	
+    [ProvideProperty("Dockable", typeof(Panel))]
 
     public sealed class DockExtender : Component, IExtenderProvider, ISupportInitialize
     {
-        private Control _dockHost;
-        private Floaties _floaties;
-
-        private bool _dockable;
+        private readonly Control _dockHost;
 
 
         // this is the blue overlay that presents a preview how the control will be docked
         internal Overlay Overlay = new Overlay();
 
 
-        public bool Dockable
-        {
-            get { return _dockable; }
-            set { _dockable = value; }
-        }
+        public bool Dockable { get; set; }
 
-        public Floaties Floaties
-        {
-            get { return _floaties; } 
-        }
+        public Floaties Floaties { get; }
 
         public DockExtender()
         {
             _dockHost = null;
-            _floaties = new Floaties();
+            Floaties = new Floaties();
         }
 
         public DockExtender(Control dockHost)
         {
             _dockHost = dockHost;
-            _floaties = new Floaties();
+            Floaties = new Floaties();
         }
 
         /// <summary>
@@ -58,8 +49,8 @@ namespace TinyPG.Controls
         /// <param name="container"></param>
         public void Show(Control container)
         {
-            IFloaty f = _floaties.Find(container);
-            if (f != null) f.Show();
+            var f = Floaties.Find(container);
+            f?.Show();
         }
 
         /// <summary>
@@ -69,12 +60,12 @@ namespace TinyPG.Controls
         /// <param name="container"></param>
         public void Hide(Control container)
         {
-            IFloaty f = _floaties.Find(container);
-            if (f != null) f.Hide();
+            var f = Floaties.Find(container);
+            f?.Hide();
         }
 
         /// <summary>
-        /// Attach a container control and use it as a grip hande. The container must support mouse move events.
+        /// Attach a container control and use it as a grip handle. The container must support mouse move events.
         /// </summary>
         /// <param name="container">container to make dockable/floatable</param>
         /// <returns>the floaty that manages the container's behaviour</returns>
@@ -95,9 +86,9 @@ namespace TinyPG.Controls
         }
 
         /// <summary>
-        /// attach this class to any dockable type of container control 
+        /// attach this class to any dockable type of container control
         /// to make it dockable.
-        /// Attach a container control and use it as a grip hande. The handle must support mouse move events.
+        /// Attach a container control and use it as a grip handle. The handle must support mouse move events.
         /// Supply a splitter control to allow resizing of the docked container
         /// </summary>
         /// <param name="container">control to be dockable</param>
@@ -105,18 +96,17 @@ namespace TinyPG.Controls
         /// <param name="splitter">splitter to resize the docked container (optional)</param>
         public IFloaty Attach(Control container, Control handle, Splitter splitter)
         {
-            if (container == null) throw new ArgumentException("container cannot be null");
-            if (handle == null) throw new ArgumentException("handle cannot be null");
+            var dockState = new DockState
+            {
+                Container = container ?? throw new ArgumentException("container cannot be null"),
+                Handle = handle ?? throw new ArgumentException("handle cannot be null"),
+                OrgDockHost = _dockHost,
+                Splitter = splitter,
+            };
 
-            DockState _dockState = new DockState();
-            _dockState.Container = container;
-            _dockState.Handle = handle;
-            _dockState.OrgDockHost = _dockHost;
-            _dockState.Splitter = splitter;
-
-            Floaty floaty = new Floaty(this);
-            floaty.Attach(_dockState);
-            _floaties.Add(floaty);
+            var floaty = new Floaty(this);
+            floaty.Attach(dockState);
+            Floaties.Add(floaty);
             return floaty;
         }
 
@@ -125,32 +115,37 @@ namespace TinyPG.Controls
         {
             Control c = null;
             if (FormIsHit(floaty.DockState.OrgDockHost, pt))
-                c = floaty.DockState.OrgDockHost; //assume toplevel control
+            {
+                c = floaty.DockState.OrgDockHost; //assume top level control
+            }
 
             if (floaty.DockOnHostOnly)
-                return c;
-
-            foreach (Floaty f in Floaties)
             {
-                if (f.DockState.Container.Visible && FormIsHit(f.DockState.Container, pt))
-                {
-                    // add this line to dissallow docking inside floaties
-                    //if (f.Visible) continue;
-
-                    c = f.DockState.Container; // found suitable floating form
-                    break;
-                }
+                return c;
             }
+
+            foreach (var f in Floaties.Cast<Floaty>().Where(f => f.DockState.Container.Visible && FormIsHit(f.DockState.Container, pt)))
+            {
+                // add this line to disallow docking inside floaties
+                //if (f.Visible) continue;
+
+                c = f.DockState.Container; // found suitable floating form
+                break;
+            }
+
             return c;
         }
 
         // finds the potential dockhost control at the specified location
         internal bool FormIsHit(Control c, Point pt)
         {
-            if (c == null) return false;
+            if (c == null)
+            {
+                return false;
+            }
 
-            Point pc = c.PointToClient(pt);
-            bool hit = c.ClientRectangle.IntersectsWith(new Rectangle(pc, new Size(1, 1))); //.TopLevelControl; // this is tricky
+            var pc = c.PointToClient(pt);
+            var hit = c.ClientRectangle.IntersectsWith(new Rectangle(pc, new Size(1, 1))); //.TopLevelControl; // this is tricky
             return hit;
         }
 
@@ -206,15 +201,13 @@ namespace TinyPG.Controls
         public Control OrgDockHost;
 
         /// <summary>
-        /// the origional docking style, stored in order to reset the state
+        /// the original docking style, stored in order to reset the state
         /// </summary>
         public DockStyle OrgDockStyle;
 
         /// <summary>
-        /// the origional bounds of the container
+        /// the original bounds of the container
         /// </summary>
         public Rectangle OrgBounds;
-
     }
-
 }

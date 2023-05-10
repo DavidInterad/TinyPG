@@ -1,4 +1,5 @@
 ﻿// Copyright 2008 - 2010 Herre Kuijpers - <herre.kuijpers@gmail.com>
+// Updated 2023 David Prem - <david.prem@interad.at>
 //
 // This source file(s) may be redistributed, altered and customized
 // by any means PROVIDING the authors name and all copyright
@@ -7,12 +8,12 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.IO;
 using System.Globalization;
+using System.IO;
+using System.Text;
 
 namespace TinyPG.Compiler
 {
@@ -20,18 +21,15 @@ namespace TinyPG.Compiler
     {
         public bool Exists(Directive directive)
         {
-            return this.Exists(new Predicate<Directive>(delegate(Directive d) { return d.Name == directive.Name; }));
+            return Exists(d => d.Name == directive.Name);
         }
 
         public Directive Find(string name)
         {
-            return this.Find(delegate(Directive d) { return d.Name == name; });
+            return Find(d => d.Name == name);
         }
 
-        public Directive this[string name]
-        {
-            get { return Find(name); }
-        }
+        public Directive this[string name] => Find(name);
     }
 
     public class Directive : Dictionary<string, string>
@@ -47,15 +45,15 @@ namespace TinyPG.Compiler
     public class Grammar
     {
         /// <summary>
-        /// represents all terminal and nonterminal symbols in the grammar
+        /// represents all terminal and non-terminal symbols in the grammar
         /// </summary>
-        public Symbols Symbols { get; set; }
+        public Symbols<Symbol> Symbols { get; set; }
 
         /// <summary>
         /// corresponds to the symbols that will be skipped during parsing
-        /// e.g. commenting codeblocks
+        /// e.g. commenting code blocks
         /// </summary>
-        public Symbols SkipSymbols { get; set; }
+        public Symbols<Symbol> SkipSymbols { get; set; }
 
         /// <summary>
         /// The special symbol used to alter the internal file and line
@@ -66,42 +64,24 @@ namespace TinyPG.Compiler
         /// <summary>
         /// these are specific directives that should be applied to the grammar
         /// this can be meta data, or information on how code should be generated, e.g.
-        /// <%@ Grammar Namespace="TinyPG" %> will generate code with namespace TinyPG.
+        /// &lt;%@ Grammar Namespace="TinyPG" %> will generate code with namespace TinyPG.
         /// </summary>
         public Directives Directives { get; set; }
 
         public Grammar()
         {
-            Symbols = new Symbols();
-            SkipSymbols = new Symbols();
+            Symbols = new Symbols<Symbol>();
+            SkipSymbols = new Symbols<Symbol>();
             Directives = new Directives();
         }
 
-        public Symbols GetTerminals()
-        {
-            Symbols symbols = new Symbols();
-            foreach (Symbol s in Symbols)
-            {
-                if (s is TerminalSymbol)
-                    symbols.Add(s);
-            }
-            return symbols;
-        }
+        public Symbols<TerminalSymbol> GetTerminals() => new Symbols<TerminalSymbol>(Symbols);
 
-        public Symbols GetNonTerminals()
-        {
-            Symbols symbols = new Symbols();
-            foreach (Symbol s in Symbols)
-            {
-                if (s is NonTerminalSymbol)
-                    symbols.Add(s);
-            }
-            return symbols;
-        }
+        public Symbols<NonTerminalSymbol> GetNonTerminals() => new Symbols<NonTerminalSymbol>(Symbols);
 
         /// <summary>
-        /// Once the grammar terminals and nonterminal production rules have been defined
-        /// use the Compile method to analyse and check the grammar semantics.
+        /// Once the grammar terminals and non-terminal production rules have been defined
+        /// use the Compile method to analyze and check the grammar semantics.
         /// </summary>
         public void Preprocess()
         {
@@ -135,7 +115,7 @@ namespace TinyPG.Compiler
 
         private void DetermineFirsts()
         {
-            foreach (NonTerminalSymbol nts in GetNonTerminals())
+            foreach (var nts in GetNonTerminals())
             {
                 nts.DetermineFirstTerminals();
             }
@@ -144,18 +124,28 @@ namespace TinyPG.Compiler
         private void SetupDirectives()
         {
 
-            Directive d = Directives.Find("TinyPG");
+            var d = Directives.Find("TinyPG");
             if (d == null)
             {
                 d = new Directive("TinyPG");
                 Directives.Insert(0, d);
             }
+
             if (!d.ContainsKey("Namespace"))
+            {
                 d["Namespace"] = "TinyPG"; // set default namespace
+            }
+
             if (!d.ContainsKey("OutputPath"))
+            {
                 d["OutputPath"] = "./"; // write files to current path
+            }
+
             if (!d.ContainsKey("Language"))
+            {
                 d["Language"] = "C#"; // set default language
+            }
+
             if (!d.ContainsKey("TemplatePath"))
             {
                 switch (d["Language"].ToLower(CultureInfo.InvariantCulture))
@@ -179,8 +169,11 @@ namespace TinyPG.Compiler
                 d = new Directive("Parser");
                 Directives.Insert(1, d);
             }
+
             if (!d.ContainsKey("Generate"))
+            {
                 d["Generate"] = "True"; // generate parser by default
+            }
 
             d = Directives.Find("Scanner");
             if (d == null)
@@ -188,8 +181,11 @@ namespace TinyPG.Compiler
                 d = new Directive("Scanner");
                 Directives.Insert(1, d);
             }
+
             if (!d.ContainsKey("Generate"))
+            {
                 d["Generate"] = "True"; // generate scanner by default
+            }
 
             d = Directives.Find("ParseTree");
             if (d == null)
@@ -197,8 +193,11 @@ namespace TinyPG.Compiler
                 d = new Directive("ParseTree");
                 Directives.Add(d);
             }
+
             if (!d.ContainsKey("Generate"))
-                d["Generate"] = "True"; // generate parsetree by default
+            {
+                d["Generate"] = "True"; // generate parse tree by default
+            }
 
             d = Directives.Find("TextHighlighter");
             if (d == null)
@@ -206,87 +205,94 @@ namespace TinyPG.Compiler
                 d = new Directive("TextHighlighter");
                 Directives.Add(d);
             }
+
             if (!d.ContainsKey("Generate"))
+            {
                 d["Generate"] = "False"; // do NOT generate a text highlighter by default
+            }
         }
 
         public string GetTemplatePath()
         {
-            string folder = AppDomain.CurrentDomain.BaseDirectory;
-            string pathout = Directives["TinyPG"]["TemplatePath"];
-            if (Path.IsPathRooted(pathout))
-                folder = Path.GetFullPath(pathout);
-            else
-                folder = Path.GetFullPath(folder + pathout);
+            var pathOut = Directives["TinyPG"]["TemplatePath"];
+            if (Path.IsPathRooted(pathOut))
+            {
+                var fullPath = Path.GetFullPath(pathOut);
+                return Directory.Exists(fullPath) ? fullPath : null;
+            }
 
-
-            DirectoryInfo dir = new DirectoryInfo(folder + @"\");
-            if (dir.Exists)
+            var folder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, pathOut));
+            if (Directory.Exists(folder))
+            {
                 return folder;
-            else
-                return null;
+            }
+
+            folder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), pathOut));
+            return Directory.Exists(folder) ? folder : null;
         }
 
         public string GetOutputPath()
         {
-            string folder = Directory.GetCurrentDirectory() + @"\";
-            string pathout = Directives["TinyPG"]["OutputPath"];
-            if (Path.IsPathRooted(pathout))
-                folder = Path.GetFullPath(pathout);
-            else
-                folder = Path.GetFullPath(folder + pathout);
+            var pathOut = Directives["TinyPG"]["OutputPath"];
+            if (Path.IsPathRooted(pathOut))
+            {
+                var fullPath = Path.GetFullPath(pathOut);
+                return Directory.Exists(fullPath) ? fullPath : null;
+            }
 
-
-            DirectoryInfo dir = new DirectoryInfo(folder + @"\");
-            if (dir.Exists)
-                return folder;
-            else
-                return null;
+            var folder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), pathOut));
+            return Directory.Exists(folder) ? folder : null;
         }
 
         public string PrintGrammar()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine("//Terminals:");
-            foreach (Symbol s in GetTerminals())
+            foreach (var s in GetTerminals())
             {
-                Symbol skip = SkipSymbols.Find(s.Name);
+                var skip = SkipSymbols.Find(s.Name);
                 if (skip != null)
+                {
                     sb.Append("[Skip] ");
+                }
+
                 sb.AppendLine(s.PrintProduction());
             }
 
             sb.AppendLine("\r\n//Production lines:");
-            foreach (Symbol s in GetNonTerminals())
+            foreach (var s in GetNonTerminals())
             {
                 sb.AppendLine(s.PrintProduction());
             }
+
             return sb.ToString();
         }
 
         public string PrintFirsts()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine("\r\n/*\r\nFirst symbols:");
-            foreach (NonTerminalSymbol s in GetNonTerminals())
+            foreach (var s in GetNonTerminals())
             {
-                string firsts = s.Name + ": ";
-                foreach (TerminalSymbol t in s.FirstTerminals)
+                var firsts = s.Name + ": ";
+                foreach (var t in s.FirstTerminals)
+                {
+                    // TODO use StringBuilder
                     firsts += t.Name + ' ';
+                }
+
                 sb.AppendLine(firsts);
             }
 
             sb.AppendLine("\r\nSkip symbols: ");
-            string skips = "";
-            foreach (TerminalSymbol s in SkipSymbols)
+            var skips = "";
+            foreach (var s in SkipSymbols)
             {
                 skips += s.Name + " ";
             }
             sb.AppendLine(skips);
             sb.AppendLine("*/");
             return sb.ToString();
-
         }
-
     }
 }

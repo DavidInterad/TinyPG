@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.CodeDom.Compiler;
 using System.Globalization;
-using System.CodeDom.Compiler;
+using Microsoft.CodeDom.Providers.DotNetCompilerPlatform;
+using TinyPG.CodeGenerators.VBNet;
+using VBCodeProvider = Microsoft.VisualBasic.VBCodeProvider;
 
 namespace TinyPG.CodeGenerators
 {
@@ -38,13 +38,13 @@ namespace TinyPG.CodeGenerators
                     switch (generator)
                     {
                         case "Parser":
-                            return new VBNet.ParserGenerator();
+                            return new ParserGenerator();
                         case "Scanner":
-                            return new VBNet.ScannerGenerator();
+                            return new ScannerGenerator();
                         case "ParseTree":
-                            return new VBNet.ParseTreeGenerator();
+                            return new ParseTreeGenerator();
                         case "TextHighlighter":
-                            return new VBNet.TextHighlighterGenerator();
+                            return new TextHighlighterGenerator();
                     }
                     break;
                 default: // c# is default language
@@ -61,7 +61,7 @@ namespace TinyPG.CodeGenerators
                     }
                     break;
             }
-            return null; // codegenerator was not found
+            return null; // code generator was not found
         }
 
         public static CodeDomProvider CreateCodeDomProvider(string language)
@@ -73,9 +73,9 @@ namespace TinyPG.CodeGenerators
                 case "vbnet":
                 case "vb.net":
                 case "vb":
-                    return new Microsoft.VisualBasic.VBCodeProvider();
+                    return new VBCodeProvider();
                 default:
-                    return new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
+                    return new CSharpCodeProvider();
             }
         }
     }

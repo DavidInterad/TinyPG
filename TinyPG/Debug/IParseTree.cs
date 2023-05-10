@@ -7,12 +7,11 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
-using System;
+
 using System.Collections.Generic;
 
 namespace TinyPG.Debug
 {
-
     public interface IParseError
     {
         int Code { get; }
@@ -25,7 +24,7 @@ namespace TinyPG.Debug
 
     public interface IParseTree : IParseNode
     {
-        object Eval(params object[] paramlist);
+        object Eval(params object[] paramList);
         string PrintTree();
     }
 

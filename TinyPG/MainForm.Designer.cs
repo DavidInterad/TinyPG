@@ -1,11 +1,15 @@
-﻿namespace TinyPG
+﻿using System.ComponentModel;
+using System.Windows.Forms;
+using TinyPG.Controls;
+
+namespace TinyPG
 {
     partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -15,8 +19,8 @@
         {
             if (disposing && (components != null))
             {
-                checker.Dispose();
-                marker.Dispose();
+                _checker.Dispose();
+                _marker.Dispose();
                 components.Dispose();
             }
             base.Dispose(disposing);
@@ -130,7 +134,7 @@
             // 
             this.newToolStripMenuItem.Name = "newToolStripMenuItem";
             this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-            this.newToolStripMenuItem.Size = new System.Drawing.Size(448, 54);
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(387, 54);
             this.newToolStripMenuItem.Text = "&New";
             this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
@@ -138,39 +142,39 @@
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
             this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(448, 54);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(387, 54);
             this.openToolStripMenuItem.Text = "&Open...";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(445, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(384, 6);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
             this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(448, 54);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(387, 54);
             this.saveToolStripMenuItem.Text = "&Save";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // saveAsToolStripMenuItem
             // 
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(448, 54);
+            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(387, 54);
             this.saveAsToolStripMenuItem.Text = "Save &As...";
             this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(445, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(384, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(448, 54);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(387, 54);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -532,7 +536,7 @@
             this.tabPage2.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(8, 7, 8, 7);
-            this.tabPage2.Size = new System.Drawing.Size(845, 1339);
+            this.tabPage2.Size = new System.Drawing.Size(845, 1336);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Parse tree";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -544,7 +548,7 @@
             this.tvParsetree.Location = new System.Drawing.Point(8, 7);
             this.tvParsetree.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
             this.tvParsetree.Name = "tvParsetree";
-            this.tvParsetree.Size = new System.Drawing.Size(829, 1325);
+            this.tvParsetree.Size = new System.Drawing.Size(829, 1322);
             this.tvParsetree.TabIndex = 0;
             this.tvParsetree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tvParsetree_AfterSelect);
             // 
@@ -554,7 +558,7 @@
             this.tabPage3.Location = new System.Drawing.Point(4, 4);
             this.tabPage3.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(845, 1339);
+            this.tabPage3.Size = new System.Drawing.Size(845, 1336);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Regex tool";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -566,7 +570,7 @@
             this.regExControl.Location = new System.Drawing.Point(0, 0);
             this.regExControl.Margin = new System.Windows.Forms.Padding(21, 17, 21, 17);
             this.regExControl.Name = "regExControl";
-            this.regExControl.Size = new System.Drawing.Size(845, 1339);
+            this.regExControl.Size = new System.Drawing.Size(845, 1336);
             this.regExControl.TabIndex = 12;
             // 
             // headerOutput
@@ -659,61 +663,61 @@
 
         #endregion
 
-        private System.Windows.Forms.MenuStrip menuStrip;
-        private System.Windows.Forms.StatusStrip statusStrip;
-        private System.Windows.Forms.RichTextBox textEditor;
-        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem aboutTinyParserGeneratorToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem menuToolsGenerate;
-        private System.Windows.Forms.Splitter splitterBottom;
-        private System.Windows.Forms.ToolStripMenuItem parseToolStripMenuItem;
-        private System.Windows.Forms.Splitter splitterRight;
-        private System.Windows.Forms.ToolStripMenuItem newToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem examplesToolStripMenuItem;
-        private System.Windows.Forms.OpenFileDialog openFileDialog;
-        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
-        private System.Windows.Forms.SaveFileDialog saveFileDialog;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-        private System.Windows.Forms.Panel panelOutput;
-        private TinyPG.Controls.TabControlEx tabOutput;
-        private System.Windows.Forms.TabPage tabPage1;
-        private System.Windows.Forms.RichTextBox textOutput;
-        private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.TreeView tvParsetree;
-        private System.Windows.Forms.TabPage tabPage3;
-        private TinyPG.Controls.RegExControl regExControl;
-        private TinyPG.Controls.HeaderLabel headerOutput;
-        private System.Windows.Forms.Panel panelInput;
-        private System.Windows.Forms.RichTextBox textInput;
-        private TinyPG.Controls.HeaderLabel headerEvaluator;
-        private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem expressionEvaluatorToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem outputToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem parsetreeToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem regexToolToolStripMenuItem;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
-        private System.Windows.Forms.ToolStripStatusLabel statusLine;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
-        private System.Windows.Forms.ToolStripStatusLabel statusCol;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel3;
-        private System.Windows.Forms.ToolStripStatusLabel statusLabel;
-        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel4;
-        private System.Windows.Forms.ToolStripStatusLabel statusPos;
-        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
-        private System.Windows.Forms.ToolStripMenuItem viewParserToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem viewScannerToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem viewParseTreeCodeToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem expressionEvaluatorToolStripMenuItem1;
-        private System.Windows.Forms.ToolStripMenuItem codeblocksToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem theTinyPGGrammarToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem theTinyPGGrammarV10ToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem theTinyPGGrammarHighlighterV12ToolStripMenuItem;
+        private MenuStrip menuStrip;
+        private StatusStrip statusStrip;
+        private RichTextBox textEditor;
+        private ToolStripMenuItem fileToolStripMenuItem;
+        private ToolStripMenuItem toolsToolStripMenuItem;
+        private ToolStripMenuItem helpToolStripMenuItem;
+        private ToolStripMenuItem aboutTinyParserGeneratorToolStripMenuItem;
+        private ToolStripMenuItem menuToolsGenerate;
+        private Splitter splitterBottom;
+        private ToolStripMenuItem parseToolStripMenuItem;
+        private Splitter splitterRight;
+        private ToolStripMenuItem newToolStripMenuItem;
+        private ToolStripMenuItem openToolStripMenuItem;
+        private ToolStripMenuItem saveToolStripMenuItem;
+        private ToolStripMenuItem saveAsToolStripMenuItem;
+        private ToolStripMenuItem exitToolStripMenuItem;
+        private ToolStripMenuItem examplesToolStripMenuItem;
+        private OpenFileDialog openFileDialog;
+        private FolderBrowserDialog folderBrowserDialog;
+        private SaveFileDialog saveFileDialog;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripSeparator toolStripSeparator2;
+        private Panel panelOutput;
+        private TabControlEx tabOutput;
+        private TabPage tabPage1;
+        private RichTextBox textOutput;
+        private TabPage tabPage2;
+        private TreeView tvParsetree;
+        private TabPage tabPage3;
+        private RegExControl regExControl;
+        private HeaderLabel headerOutput;
+        private Panel panelInput;
+        private RichTextBox textInput;
+        private HeaderLabel headerEvaluator;
+        private ToolStripMenuItem viewToolStripMenuItem;
+        private ToolStripMenuItem expressionEvaluatorToolStripMenuItem;
+        private ToolStripMenuItem outputToolStripMenuItem;
+        private ToolStripMenuItem parsetreeToolStripMenuItem;
+        private ToolStripMenuItem regexToolToolStripMenuItem;
+        private ToolStripStatusLabel toolStripStatusLabel1;
+        private ToolStripStatusLabel statusLine;
+        private ToolStripStatusLabel toolStripStatusLabel2;
+        private ToolStripStatusLabel statusCol;
+        private ToolStripStatusLabel toolStripStatusLabel3;
+        private ToolStripStatusLabel statusLabel;
+        private ToolStripStatusLabel toolStripStatusLabel4;
+        private ToolStripStatusLabel statusPos;
+        private ToolStripSeparator toolStripMenuItem1;
+        private ToolStripMenuItem viewParserToolStripMenuItem;
+        private ToolStripMenuItem viewScannerToolStripMenuItem;
+        private ToolStripMenuItem viewParseTreeCodeToolStripMenuItem;
+        private ToolStripMenuItem expressionEvaluatorToolStripMenuItem1;
+        private ToolStripMenuItem codeblocksToolStripMenuItem;
+        private ToolStripMenuItem theTinyPGGrammarToolStripMenuItem;
+        private ToolStripMenuItem theTinyPGGrammarV10ToolStripMenuItem;
+        private ToolStripMenuItem theTinyPGGrammarHighlighterV12ToolStripMenuItem;
     }
 }

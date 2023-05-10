@@ -2,306 +2,323 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
 
 namespace TinyPG
 {
-    #region ParseTree
-    [Serializable]
-    public class ParseErrors : List<ParseError>
-    {
-    }
+	#region ParseTree
+	[Serializable]
+	public class ParseErrors : List<ParseError>
+	{
+	}
 
-    [Serializable]
-    public class ParseError
-    {
-        private string file;
-        private string message;
-        private int code;
-        private int line;
-        private int col;
-        private int pos;
-        private int length;
+	[Serializable]
+	public class ParseError
+	{
+		public string File { get; }
+		public int Code { get; }
+		public int Line { get; }
+		public int Column { get; }
+		public int Position { get; }
+		public int Length { get; }
+		public string Message { get; }
 
-        public string File { get { return file; } }
-        public int Code { get { return code; } }
-        public int Line { get { return line; } }
-        public int Column { get { return col; } }
-        public int Position { get { return pos; } }
-        public int Length { get { return length; } }
-        public string Message { get { return message; } }
+		// just for the sake of serialization
+		public ParseError()
+		{
+		}
 
-        // just for the sake of serialization
-        public ParseError()
-        {
-        }
+		public ParseError(string message, int code, ParseNode node) : this(message, code, node.Token)
+		{
+		}
 
-        public ParseError(string message, int code, ParseNode node) : this(message, code, node.Token)
-        {
-        }
+		public ParseError(string message, int code, Token token) : this(message, code, token.File, token.Line, token.Column, token.StartPos, token.Length)
+		{
+		}
 
-        public ParseError(string message, int code, Token token) : this(message, code, token.File, token.Line, token.Column, token.StartPos, token.Length)
-        {
-        }
+		public ParseError(string message, int code, string file = "", int line = 0, int col = 0, int pos = 0, int length = 0)
+		{
+			File = file;
+			Message = message;
+			Code = code;
+			Line = line;
+			Column = col;
+			Position = pos;
+			Length = length;
+		}
+	}
 
-        public ParseError(string message, int code, string file = "", int line = 0, int col = 0, int pos = 0, int length = 0)
-        {
-            this.file = file;
-            this.message = message;
-            this.code = code;
-            this.line = line;
-            this.col = col;
-            this.pos = pos;
-            this.length = length;
-        }
-    }
+	// root level of the node tree
+	[Serializable]
+	public class ParseTree : ParseNode
+	{
+		public ParseErrors Errors;
 
-    // rootlevel of the node tree
-    [Serializable]
-    public partial class ParseTree : ParseNode
-    {
-        public ParseErrors Errors;
+		public List<Token> Skipped;
 
-        public List<Token> Skipped;
+		public ParseTree() : base(new Token(), "ParseTree")
+		{
+			Token.Type = TokenType.Start;
+			Token.Text = "Root";
+			Errors = new ParseErrors();
+		}
 
-        public ParseTree() : base(new Token(), "ParseTree")
-        {
-            Token.Type = TokenType.Start;
-            Token.Text = "Root";
-            Errors = new ParseErrors();
-        }
+		public string PrintTree()
+		{
+			var sb = new StringBuilder();
+			const int indent = 0;
+			PrintNode(sb, this, indent);
+			return sb.ToString();
+		}
 
-        public string PrintTree()
-        {
-            StringBuilder sb = new StringBuilder();
-            int indent = 0;
-            PrintNode(sb, this, indent);
-            return sb.ToString();
-        }
+		private void PrintNode(StringBuilder sb, ParseNode node, int indent)
+		{
+			var space = "".PadLeft(indent, ' ');
 
-        private void PrintNode(StringBuilder sb, ParseNode node, int indent)
-        {
+			sb.Append(space);
+			sb.AppendLine(node.Text);
 
-            string space = "".PadLeft(indent, ' ');
+			foreach (var n in node.Nodes)
+			{
+				PrintNode(sb, n, indent + 2);
+			}
+		}
 
-            sb.Append(space);
-            sb.AppendLine(node.Text);
+		/// <summary>
+		/// this is the entry point for executing and evaluating the parse tree.
+		/// </summary>
+		/// <param name="paramList">additional optional input parameters</param>
+		/// <returns>the output of the evaluation function</returns>
+		public object Eval(params object[] paramList)
+		{
+			return Nodes[0].Eval(this, paramList);
+		}
+	}
 
-            foreach (ParseNode n in node.Nodes)
-                PrintNode(sb, n, indent + 2);
-        }
+	[Serializable]
+	[XmlInclude(typeof(ParseTree))]
+	public class ParseNode
+	{
+		protected string text;
+		protected List<ParseNode> nodes;
 
-        /// <summary>
-        /// this is the entry point for executing and evaluating the parse tree.
-        /// </summary>
-        /// <param name="paramlist">additional optional input parameters</param>
-        /// <returns>the output of the evaluation function</returns>
-        public object Eval(params object[] paramlist)
-        {
-            return Nodes[0].Eval(this, paramlist);
-        }
-    }
+		public List<ParseNode> Nodes => nodes;
 
-    [Serializable]
-    [XmlInclude(typeof(ParseTree))]
-    public partial class ParseNode
-    {
-        protected string text;
-        protected List<ParseNode> nodes;
+		[XmlIgnore] // avoid circular references when serializing
+		public ParseNode Parent;
+		public Token Token; // the token/rule
 
-        public List<ParseNode> Nodes { get {return nodes;} }
+		[XmlIgnore] // skip redundant text (is part of Token)
+		public string Text
+		{ // text to display in parse tree
+			get => text;
+			set => text = value;
+		}
 
-        [XmlIgnore] // avoid circular references when serializing
-        public ParseNode Parent;
-        public Token Token; // the token/rule
+		public virtual ParseNode CreateNode(Token token, string text)
+		{
+			var node = new ParseNode(token, text)
+			{
+				Parent = this,
+			};
+			return node;
+		}
 
-        [XmlIgnore] // skip redundant text (is part of Token)
-        public string Text { // text to display in parse tree
-            get { return text;}
-            set { text = value; }
-        }
+		protected ParseNode(Token token, string text)
+		{
+			Token = token;
+			this.text = text;
+			nodes = new List<ParseNode>();
+		}
 
-        public virtual ParseNode CreateNode(Token token, string text)
-        {
-            ParseNode node = new ParseNode(token, text);
-            node.Parent = this;
-            return node;
-        }
+		protected object GetValue(ParseTree tree, TokenType type, int index)
+		{
+			return GetValue(tree, type, ref index);
+		}
 
-        protected ParseNode(Token token, string text)
-        {
-            this.Token = token;
-            this.text = text;
-            this.nodes = new List<ParseNode>();
-        }
+		protected object GetValue(ParseTree tree, TokenType type, ref int index)
+		{
+			if (index < 0)
+			{
+				return null;
+			}
 
-        protected object GetValue(ParseTree tree, TokenType type, int index)
-        {
-            return GetValue(tree, type, ref index);
-        }
+			// left to right
+			object o = null;
+			foreach (var node in nodes.Where(node => node.Token.Type == type))
+			{
+				index--;
+				if (index >= 0)
+				{
+					continue;
+				}
 
-        protected object GetValue(ParseTree tree, TokenType type, ref int index)
-        {
-            object o = null;
-            if (index < 0) return o;
+				o = node.Eval(tree);
+				break;
+			}
 
-            // left to right
-            foreach (ParseNode node in nodes)
-            {
-                if (node.Token.Type == type)
-                {
-                    index--;
-                    if (index < 0)
-                    {
-                        o = node.Eval(tree);
-                        break;
-                    }
-                }
-            }
-            return o;
-        }
+			return o;
+		}
 
-        /// <summary>
-        /// this implements the evaluation functionality, cannot be used directly
-        /// </summary>
-        /// <param name="tree">the parsetree itself</param>
-        /// <param name="paramlist">optional input parameters</param>
-        /// <returns>a partial result of the evaluation</returns>
-        internal object Eval(ParseTree tree, params object[] paramlist)
-        {
-            object Value = null;
+		/// <summary>
+		/// this implements the evaluation functionality, cannot be used directly
+		/// </summary>
+		/// <param name="tree">the parse tree itself</param>
+		/// <param name="paramList">optional input parameters</param>
+		/// <returns>a partial result of the evaluation</returns>
+		internal object Eval(ParseTree tree, params object[] paramList)
+		{
+			object value;
+			switch (Token.Type)
+			{
+				case TokenType.Start:
+					value = EvalStart(tree, paramList);
+					break;
+				case TokenType.Directive:
+					value = EvalDirective(tree, paramList);
+					break;
+				case TokenType.NameValue:
+					value = EvalNameValue(tree, paramList);
+					break;
+				case TokenType.ExtProduction:
+					value = EvalExtProduction(tree, paramList);
+					break;
+				case TokenType.Attribute:
+					value = EvalAttribute(tree, paramList);
+					break;
+				case TokenType.Params:
+					value = EvalParams(tree, paramList);
+					break;
+				case TokenType.Param:
+					value = EvalParam(tree, paramList);
+					break;
+				case TokenType.Production:
+					value = EvalProduction(tree, paramList);
+					break;
+				case TokenType.Rule:
+					value = EvalRule(tree, paramList);
+					break;
+				case TokenType.Subrule:
+					value = EvalSubrule(tree, paramList);
+					break;
+				case TokenType.ConcatRule:
+					value = EvalConcatRule(tree, paramList);
+					break;
+				case TokenType.Symbol:
+					value = EvalSymbol(tree, paramList);
+					break;
 
-            switch (Token.Type)
-            {
-                case TokenType.Start:
-                    Value = EvalStart(tree, paramlist);
-                    break;
-                case TokenType.Directive:
-                    Value = EvalDirective(tree, paramlist);
-                    break;
-                case TokenType.NameValue:
-                    Value = EvalNameValue(tree, paramlist);
-                    break;
-                case TokenType.ExtProduction:
-                    Value = EvalExtProduction(tree, paramlist);
-                    break;
-                case TokenType.Attribute:
-                    Value = EvalAttribute(tree, paramlist);
-                    break;
-                case TokenType.Params:
-                    Value = EvalParams(tree, paramlist);
-                    break;
-                case TokenType.Param:
-                    Value = EvalParam(tree, paramlist);
-                    break;
-                case TokenType.Production:
-                    Value = EvalProduction(tree, paramlist);
-                    break;
-                case TokenType.Rule:
-                    Value = EvalRule(tree, paramlist);
-                    break;
-                case TokenType.Subrule:
-                    Value = EvalSubrule(tree, paramlist);
-                    break;
-                case TokenType.ConcatRule:
-                    Value = EvalConcatRule(tree, paramlist);
-                    break;
-                case TokenType.Symbol:
-                    Value = EvalSymbol(tree, paramlist);
-                    break;
+				default:
+					value = Token.Text;
+					break;
+			}
+			return value;
+		}
 
-                default:
-                    Value = Token.Text;
-                    break;
-            }
-            return Value;
-        }
+		protected virtual object EvalStart(ParseTree tree, params object[] paramList) =>
+			"Could not interpret input; no semantics implemented.";
 
-        protected virtual object EvalStart(ParseTree tree, params object[] paramlist)
-        {
-            return "Could not interpret input; no semantics implemented.";
-        }
+		protected virtual object EvalDirective(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalDirective(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalNameValue(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalNameValue(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalExtProduction(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalExtProduction(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalAttribute(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalAttribute(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalParams(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalParams(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalParam(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalParam(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalProduction(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalProduction(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalRule(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalRule(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalSubrule(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalSubrule(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalConcatRule(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
 
-        protected virtual object EvalConcatRule(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
+		protected virtual object EvalSymbol(ParseTree tree, params object[] paramList)
+		{
+			foreach (var node in Nodes)
+			{
+				node.Eval(tree, paramList);
+			}
+			return null;
+		}
+	}
 
-        protected virtual object EvalSymbol(ParseTree tree, params object[] paramlist)
-        {
-            foreach (var node in Nodes)
-                node.Eval(tree, paramlist);
-            return null;
-        }
-
-
-    }
-
-    #endregion ParseTree
+	#endregion ParseTree
 }

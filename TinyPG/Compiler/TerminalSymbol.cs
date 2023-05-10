@@ -7,6 +7,7 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -17,7 +18,7 @@ namespace TinyPG.Compiler
         public Regex Expression;
 
         public TerminalSymbol()
-            : this("Terminal_" + ++counter, "")
+            : this("Terminal_" + ++Counter, "")
         { }
 
         public TerminalSymbol(string name)

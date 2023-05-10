@@ -7,18 +7,19 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
-using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Windows.Forms;
 
 namespace TinyPG.Controls
 {
-    class HeaderLabel : Label
+    internal class HeaderLabel : Label
     {
-        private bool HasFocus;
-        private Control FocusControl;
-        private bool CloseButtonPressed;
+        private bool _hasFocus;
+        private Control _focusControl;
+        private bool _closeButtonPressed;
 
         public event EventHandler CloseClick;
 
@@ -31,48 +32,36 @@ namespace TinyPG.Controls
 
         private void RefreshHeader()
         {
-            if (HasFocus)
-            {
-                ForeColor = SystemColors.ControlText;
-            }
-            else
-            {
-                ForeColor = SystemColors.GrayText;
-            }
-
+            ForeColor = _hasFocus ? SystemColors.ControlText : SystemColors.GrayText;
             Invalidate();
-            
         }
 
         private bool IsHighlighted()
         {
-            Rectangle box = new Rectangle(Width - 20, (Height - 15) / 2, 16, 14);
-            Point p = this.PointToClient(Cursor.Position);
+            var box = new Rectangle(Width - 20, (Height - 15) / 2, 16, 14);
+            var p = PointToClient(Cursor.Position);
             return new Rectangle(p.X, p.Y, 1, 1).IntersectsWith(box);
         }
 
         protected void PaintCloseButton(Graphics graphics)
         {
-
             // paintclosebutton
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.InterpolationMode = InterpolationMode.Bicubic;
 
-
-            Rectangle box = new Rectangle(Width - 20, (Height - 15) / 2, 16, 14);
-            Pen pen = new Pen(HasFocus ? SystemColors.WindowText : SystemColors.GrayText, 2f);
-            Point p1 = new Point(Width - 16, (Height-8)/2);
-            Point p2 = new Point(p1.X + 7, p1.Y+7);
-            Point p3 = new Point(p1.X + 7, p1.Y);
-            Point p4 = new Point(p1.X, p1.Y + 7);
-
+            var box = new Rectangle(Width - 20, (Height - 15) / 2, 16, 14);
+            var pen = new Pen(_hasFocus ? SystemColors.WindowText : SystemColors.GrayText, 2f);
+            var p1 = new Point(Width - 16, (Height-8)/2);
+            var p2 = new Point(p1.X + 7, p1.Y+7);
+            var p3 = new Point(p1.X + 7, p1.Y);
+            var p4 = new Point(p1.X, p1.Y + 7);
 
             if (IsHighlighted())
             {
-                if (CloseButtonPressed)
+                if (_closeButtonPressed)
                 {
-                graphics.FillRectangle(SystemBrushes.GradientInactiveCaption, box);
-                graphics.DrawRectangle(SystemPens.ActiveCaption, box);
+                    graphics.FillRectangle(SystemBrushes.GradientInactiveCaption, box);
+                    graphics.DrawRectangle(SystemPens.ActiveCaption, box);
                 }
                 else
                 {
@@ -80,7 +69,7 @@ namespace TinyPG.Controls
                     graphics.DrawRectangle(SystemPens.Highlight, box);
                 }
             }
-            
+
             graphics.DrawLine(pen, p1, p2);
             graphics.DrawLine(pen, p3, p4);
             pen.Dispose();
@@ -93,7 +82,7 @@ namespace TinyPG.Controls
         /// <returns></returns>
         public void Activate(Control control)
         {
-            FocusControl = control;
+            _focusControl = control;
             ActivateRecursive(Parent);
         }
 
@@ -101,19 +90,21 @@ namespace TinyPG.Controls
         {
             ActivatedBy(control);
             foreach (Control c in control.Controls)
+            {
                 ActivateRecursive(c);
+            }
         }
 
         /// <summary>
         /// register controls that will activate this header. usually these are child or sibling controls as part of the container control
-        /// however also the container control will activate the header and should be registerd also as ActivatedBy
+        /// however also the container control will activate the header and should be registered also as ActivatedBy
         /// </summary>
         /// <param name="control"></param>
         public void ActivatedBy(Control control)
         {
-            control.GotFocus += new EventHandler(control_GotFocus);
-            control.MouseDown += new MouseEventHandler(control_MouseDown);
-            control.LostFocus += new EventHandler(control_LostFocus);
+            control.GotFocus += control_GotFocus;
+            control.MouseDown += control_MouseDown;
+            control.LostFocus += control_LostFocus;
         }
 
         /// <summary>
@@ -122,49 +113,50 @@ namespace TinyPG.Controls
         /// <param name="control"></param>
         public void DeactivatedBy(Control control)
         {
-            control.GotFocus += new EventHandler(control_LostFocus);
+            control.GotFocus += control_LostFocus;
         }
 
-        
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && IsHighlighted())
-                CloseButtonPressed = true;
-            else
-                CloseButtonPressed = false;
+            _closeButtonPressed = e.Button == MouseButtons.Left && IsHighlighted();
 
-            this.Focus();
+            Focus();
 
             if (!IsHighlighted())
+            {
                 base.OnMouseDown(e);
+            }
         }
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            if (CloseButtonPressed && IsHighlighted() && e.Button == MouseButtons.Left)
+            if (_closeButtonPressed && IsHighlighted() && e.Button == MouseButtons.Left)
             {
                 // raise close event.
-                if (CloseClick != null)
-                    CloseClick.Invoke(this, new EventArgs());
+                CloseClick?.Invoke(this, EventArgs.Empty);
             }
             else
             {
                 base.OnMouseUp(e);
             }
-            CloseButtonPressed = false;
+
+            _closeButtonPressed = false;
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
             if (!IsHighlighted())
+            {
                 base.OnMouseMove(e);
+            }
+
             Invalidate();
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
-            CloseButtonPressed = false;
+            _closeButtonPressed = false;
             Invalidate();
             base.OnMouseLeave(e);
         }
@@ -172,22 +164,25 @@ namespace TinyPG.Controls
         protected override void OnGotFocus(EventArgs e)
         {
             base.OnGotFocus(e);
-            if (FocusControl != null)
-                FocusControl.Focus();
+            if (_focusControl != null)
+            {
+                _focusControl.Focus();
+            }
             else
+            {
                 Parent.Focus();
-
+            }
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
-            Brush brush;
-            Rectangle r = new Rectangle(0, 0, Width, Height);
+            var r = new Rectangle(0, 0, Width, Height);
 
-            if (HasFocus)
-                brush = new LinearGradientBrush(r, SystemColors.ActiveCaption, SystemColors.GradientActiveCaption, LinearGradientMode.Vertical);
-            else
-                brush = new LinearGradientBrush(r, SystemColors.InactiveCaption, SystemColors.GradientInactiveCaption, LinearGradientMode.Vertical);
+            Brush brush = _hasFocus
+                ? new LinearGradientBrush(r, SystemColors.ActiveCaption, SystemColors.GradientActiveCaption,
+                    LinearGradientMode.Vertical)
+                : new LinearGradientBrush(r, SystemColors.InactiveCaption, SystemColors.GradientInactiveCaption,
+                    LinearGradientMode.Vertical);
             pevent.Graphics.FillRectangle(brush, r);
             brush.Dispose();
             r.Height--;
@@ -206,21 +201,20 @@ namespace TinyPG.Controls
 
         void control_MouseDown(object sender, MouseEventArgs e)
         {
-            HasFocus = true;
+            _hasFocus = true;
             RefreshHeader();
         }
 
         void control_GotFocus(object sender, EventArgs e)
         {
-            HasFocus = true;
+            _hasFocus = true;
             RefreshHeader();
         }
 
         void control_LostFocus(object sender, EventArgs e)
         {
-            HasFocus = false;
+            _hasFocus = false;
             RefreshHeader();
         }
-
     }
 }

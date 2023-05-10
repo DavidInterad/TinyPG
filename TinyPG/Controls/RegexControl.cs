@@ -7,14 +7,12 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
+
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
-using System.Data;
 using System.Text;
-using System.Windows.Forms;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace TinyPG.Controls
 {
@@ -46,7 +44,7 @@ namespace TinyPG.Controls
             textBox.TextChanged -= textBox_TextChanged;
             textBox.SuspendLayout();
             DrawingControl.SuspendDrawing(textBox);
- 
+
             try
             {
                 // Save the original selection so we can restore it.
@@ -60,15 +58,15 @@ namespace TinyPG.Controls
 
                 textMatches.Text = "";
 
-                RegexOptions options = (checkMultiline.Checked ? RegexOptions.Multiline : RegexOptions.Singleline);
-                if (checkIgnoreCase.Checked) options = options | RegexOptions.IgnoreCase;
+                var options = checkMultiline.Checked ? RegexOptions.Multiline : RegexOptions.Singleline;
+                if (checkIgnoreCase.Checked) options |= RegexOptions.IgnoreCase;
 
-                Regex expr = new Regex(textExpression.Text, options);
-                MatchCollection ms = expr.Matches(textBox.Text);
+                var expr = new Regex(textExpression.Text, options);
+                var ms = expr.Matches(textBox.Text);
 
-                statusText.Text = ms.Count + " match(es) found";
+                statusText.Text = $"{ms.Count} match(es) found";
 
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 if (ms.Count > 0)
                 {
                     foreach (Match m in ms)
@@ -77,22 +75,23 @@ namespace TinyPG.Controls
                         textBox.SelectionBackColor = Color.LightPink;
 
 
-                        string[] names = expr.GetGroupNames();
-                        foreach (string group in names)
+                        var names = expr.GetGroupNames();
+                        foreach (var group in names)
                         {
-                            int val;
-                            if (int.TryParse(group, out val)) continue;
+                            if (int.TryParse(group, out _))
+                            {
+                                continue;
+                            }
 
                             sb.Append("<" + group + ">=");
                             sb.Append(m.Groups[group].Value);
                             sb.Append("\r\n");
                         }
-
                     }
                 }
 
                 // Restore the previous selection.
-                textBox.Select(start, length);               
+                textBox.Select(start, length);
                 textMatches.Text = sb.ToString();
             }
             catch (Exception ex)

@@ -1,4 +1,5 @@
 ﻿// Copyright 2008 - 2010 Herre Kuijpers - <herre.kuijpers@gmail.com>
+// Updated 2023 David Prem - <david.prem@interad.at>
 //
 // This source file(s) may be redistributed, altered and customized
 // by any means PROVIDING the authors name and all copyright
@@ -7,23 +8,23 @@
 // EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
 // LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
 //-----------------------------------------------------------------------
-using System;
+
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace TinyPG.Compiler
 {
-    public class Symbols : List<Symbol>
+    public class Symbols<T> : List<T> where T : Symbol
     {
-        public bool Exists(Symbol symbol)
-        {
-            return this.Exists(new Predicate<Symbol>(delegate(Symbol s) { return s.Name == symbol.Name; }));
-        }
+        public Symbols() { }
 
-        public Symbol Find(string Name)
-        {
-            return this.Find(delegate(Symbol s) { return s == null ? false : s.Name == Name; });
-        }
+        public Symbols(IEnumerable<T> symbols) => AddRange(symbols);
+
+        public Symbols(IEnumerable<Symbol> symbols) => AddRange(symbols.OfType<T>());
+
+        public bool Exists(Symbol symbol) => Exists(s => s.Name == symbol.Name);
+
+        public Symbol Find(string name) => Find(s => s != null && s.Name == name);
     }
 
     // allows assigning attributes to the node
@@ -35,7 +36,7 @@ namespace TinyPG.Compiler
     {
         public SymbolAttributes Attributes;
 
-        protected static int counter = 0;
+        protected static int Counter = 0;
 
         // the name of the symbol
         public string Name;

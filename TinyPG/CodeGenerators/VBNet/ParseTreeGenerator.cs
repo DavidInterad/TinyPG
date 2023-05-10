@@ -1,7 +1,7 @@
-﻿using System.Text;
-using System.IO;
-using TinyPG.Compiler;
+﻿using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
+using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators.VBNet
 {
@@ -12,107 +12,106 @@ namespace TinyPG.CodeGenerators.VBNet
         {
         }
 
-        public string Generate(Grammar Grammar, bool Debug)
+        public string Generate(Grammar grammar, bool debug)
         {
-            if (string.IsNullOrEmpty(Grammar.GetTemplatePath()))
+            if (string.IsNullOrEmpty(grammar.GetTemplatePath()))
                 return null;
 
             // copy the parse tree file (optionally)
-            string parsetree = File.ReadAllText(Grammar.GetTemplatePath() + templateName);
+            var parseTree = File.ReadAllText(grammar.GetTemplatePath() + TemplateName);
 
-            StringBuilder evalsymbols = new StringBuilder();
-            StringBuilder evalmethods = new StringBuilder();
+            var evalSymbols = new StringBuilder();
+            var evalMethods = new StringBuilder();
 
             // build non terminal tokens
-            foreach (Symbol s in Grammar.GetNonTerminals())
+            foreach (var s in grammar.GetNonTerminals())
             {
-                evalsymbols.AppendLine("                Case TokenType." + s.Name + "");
-                evalsymbols.AppendLine("                    Value = Eval" + s.Name + "(tree, paramlist)");
-                evalsymbols.AppendLine("                    Exit Select");
+                evalSymbols.AppendLine("                Case TokenType." + s.Name + "");
+                evalSymbols.AppendLine("                    Value = Eval" + s.Name + "(tree, paramList)");
+                evalSymbols.AppendLine("                    Exit Select");
 
-                evalmethods.AppendLine("        Protected Overridable Function Eval" + s.Name + "(ByVal tree As ParseTree, ByVal ParamArray paramlist As Object()) As Object");
+                evalMethods.AppendLine("        Protected Overridable Function Eval" + s.Name + "(ByVal tree As ParseTree, ByVal ParamArray paramList As Object()) As Object");
                 if (s.CodeBlock != null)
                 {
                     // paste user code here
-                    evalmethods.AppendLine(FormatCodeBlock(s as NonTerminalSymbol));
+                    evalMethods.AppendLine(FormatCodeBlock(s));
                 }
                 else
                 {
-                    if (s.Name == "Start") // return a nice warning message from root object.
-                        evalmethods.AppendLine("            Return \"Could not interpret input; no semantics implemented.\"");
-                    else
-                        evalmethods.AppendLine("            Throw New NotImplementedException()");
+                    evalMethods.AppendLine(s.Name == "Start" // return a nice warning message from root object.
+                        ? "            Return \"Could not interpret input; no semantics implemented.\""
+                        : "            Throw New NotImplementedException()");
 
                     // otherwise simply not implemented!
                 }
-                evalmethods.AppendLine("        End Function\r\n");
+                evalMethods.AppendLine("        End Function\r\n");
             }
 
-            if (Debug)
+            if (debug)
             {
-                parsetree = parsetree.Replace(@"<%Imports%>", "Imports TinyPG.Debug");
-                parsetree = parsetree.Replace(@"<%Namespace%>", "TinyPG.Debug");
-                parsetree = parsetree.Replace(@"<%IParseTree%>", "\r\n        Implements IParseTree");
-                parsetree = parsetree.Replace(@"<%IParseNode%>", "\r\n        Implements IParseNode\r\n");
-                parsetree = parsetree.Replace(@"<%ParseError%>", "\r\n        Implements IParseError\r\n");
-                parsetree = parsetree.Replace(@"<%ParseErrors%>", "List(Of IParseError)");
+                parseTree = parseTree.Replace(@"<%Imports%>", "Imports TinyPG.Debug");
+                parseTree = parseTree.Replace(@"<%Namespace%>", "TinyPG.Debug");
+                parseTree = parseTree.Replace(@"<%IParseTree%>", "\r\n        Implements IParseTree");
+                parseTree = parseTree.Replace(@"<%IParseNode%>", "\r\n        Implements IParseNode\r\n");
+                parseTree = parseTree.Replace(@"<%ParseError%>", "\r\n        Implements IParseError\r\n");
+                parseTree = parseTree.Replace(@"<%ParseErrors%>", "List(Of IParseError)");
 
-                string itoken = "        Public ReadOnly Property IToken() As IToken Implements IParseNode.IToken\r\n"
-                                + "            Get\r\n"
-                                + "                Return DirectCast(Token, IToken)\r\n"
-                                + "            End Get\r\n"
-                                + "        End Property\r\n";
+                const string iToken = "        Public ReadOnly Property IToken() As IToken Implements IParseNode.IToken\r\n"
+                                      + "            Get\r\n"
+                                      + "                Return DirectCast(Token, IToken)\r\n"
+                                      + "            End Get\r\n"
+                                      + "        End Property\r\n";
 
-                parsetree = parsetree.Replace(@"<%ITokenGet%>", itoken);
+                parseTree = parseTree.Replace(@"<%ITokenGet%>", iToken);
 
 
-                parsetree = parsetree.Replace(@"<%ImplementsIParseTreePrintTree%>", " Implements IParseTree.PrintTree");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseTreeEval%>", " Implements IParseTree.Eval");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorCode%>", " Implements IParseError.Code");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorLine%>", " Implements IParseError.Line");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorColumn%>", " Implements IParseError.Column");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorPosition%>", " Implements IParseError.Position");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorLength%>", " Implements IParseError.Length");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorMessage%>", " Implements IParseError.Message");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseTreePrintTree%>", " Implements IParseTree.PrintTree");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseTreeEval%>", " Implements IParseTree.Eval");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorCode%>", " Implements IParseError.Code");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorLine%>", " Implements IParseError.Line");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorColumn%>", " Implements IParseError.Column");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorPosition%>", " Implements IParseError.Position");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorLength%>", " Implements IParseError.Length");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorMessage%>", " Implements IParseError.Message");
 
-                string inodes = "        Public Shared Function Node2INode(ByVal node As ParseNode) As IParseNode\r\n"
-                                    + "            Return DirectCast(node, IParseNode)\r\n"
-                                    + "        End Function\r\n\r\n"
-                                    + "        Public ReadOnly Property INodes() As List(Of IParseNode) Implements IParseNode.INodes\r\n"
-                                    + "            Get\r\n"
-                                    + "                Return Nodes.ConvertAll(Of IParseNode)(New Converter(Of ParseNode, IParseNode)(AddressOf Node2INode))\r\n"
-                                    + "            End Get\r\n"
-                                    + "        End Property\r\n";
-                parsetree = parsetree.Replace(@"<%INodesGet%>", inodes);
-                parsetree = parsetree.Replace(@"<%ImplementsIParseNodeText%>", " Implements IParseNode.Text");
+                const string iNodes = "        Public Shared Function Node2INode(ByVal node As ParseNode) As IParseNode\r\n"
+                                      + "            Return DirectCast(node, IParseNode)\r\n"
+                                      + "        End Function\r\n\r\n"
+                                      + "        Public ReadOnly Property INodes() As List(Of IParseNode) Implements IParseNode.INodes\r\n"
+                                      + "            Get\r\n"
+                                      + "                Return Nodes.ConvertAll(Of IParseNode)(New Converter(Of ParseNode, IParseNode)(AddressOf Node2INode))\r\n"
+                                      + "            End Get\r\n"
+                                      + "        End Property\r\n";
+                parseTree = parseTree.Replace(@"<%INodesGet%>", iNodes);
+                parseTree = parseTree.Replace(@"<%ImplementsIParseNodeText%>", " Implements IParseNode.Text");
 
             }
             else
             {
-                parsetree = parsetree.Replace(@"<%Imports%>", "");
-                parsetree = parsetree.Replace(@"<%Namespace%>", Grammar.Directives["TinyPG"]["Namespace"]);
-                parsetree = parsetree.Replace(@"<%ParseError%>", "");
-                parsetree = parsetree.Replace(@"<%ParseErrors%>", "List(Of ParseError)");
-                parsetree = parsetree.Replace(@"<%IParseTree%>", "");
-                parsetree = parsetree.Replace(@"<%IParseNode%>", "");
-                parsetree = parsetree.Replace(@"<%ITokenGet%>", "");
-                parsetree = parsetree.Replace(@"<%INodesGet%>", "");
+                parseTree = parseTree.Replace(@"<%Imports%>", "");
+                parseTree = parseTree.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
+                parseTree = parseTree.Replace(@"<%ParseError%>", "");
+                parseTree = parseTree.Replace(@"<%ParseErrors%>", "List(Of ParseError)");
+                parseTree = parseTree.Replace(@"<%IParseTree%>", "");
+                parseTree = parseTree.Replace(@"<%IParseNode%>", "");
+                parseTree = parseTree.Replace(@"<%ITokenGet%>", "");
+                parseTree = parseTree.Replace(@"<%INodesGet%>", "");
 
-                parsetree = parsetree.Replace(@"<%ImplementsIParseTreePrintTree%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseTreeEval%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorCode%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorLine%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorColumn%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorPosition%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorLength%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseErrorMessage%>", "");
-                parsetree = parsetree.Replace(@"<%ImplementsIParseNodeText%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseTreePrintTree%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseTreeEval%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorCode%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorLine%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorColumn%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorPosition%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorLength%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseErrorMessage%>", "");
+                parseTree = parseTree.Replace(@"<%ImplementsIParseNodeText%>", "");
             }
 
-            parsetree = parsetree.Replace(@"<%EvalSymbols%>", evalsymbols.ToString());
-            parsetree = parsetree.Replace(@"<%VirtualEvalMethods%>", evalmethods.ToString());
+            parseTree = parseTree.Replace(@"<%EvalSymbols%>", evalSymbols.ToString());
+            parseTree = parseTree.Replace(@"<%VirtualEvalMethods%>", evalMethods.ToString());
 
-            return parsetree;
+            return parseTree;
         }
 
         /// <summary>
@@ -121,30 +120,37 @@ namespace TinyPG.CodeGenerators.VBNet
         /// errors are added to the Error object.
         /// </summary>
         /// <param name="nts">non terminal and its production rule</param>
-        /// <returns>a formated codeblock</returns>
-        private string FormatCodeBlock(NonTerminalSymbol nts)
+        /// <returns>a formatted codeblock</returns>
+        private static string FormatCodeBlock(NonTerminalSymbol nts)
         {
-            string codeblock = nts.CodeBlock;
-            if (nts == null) return "";
+            if (nts == null)
+            {
+                return "";
+            }
 
-            Regex var = new Regex(@"\$(?<var>[a-zA-Z_0-9]+)(\[(?<index>[^]]+)\])?", RegexOptions.Compiled);
+            var codeblock = nts.CodeBlock;
 
-            Symbols symbols = nts.DetermineProductionSymbols();
+            var var = new Regex(@"\$(?<var>[a-zA-Z_0-9]+)(\[(?<index>[^]]+)\])?", RegexOptions.Compiled);
+
+            var symbols = nts.DetermineProductionSymbols();
 
 
-            Match match = var.Match(codeblock);
+            var match = var.Match(codeblock);
             while (match.Success)
             {
-                Symbol s = symbols.Find(match.Groups["var"].Value);
+                var s = symbols.Find(match.Groups["var"].Value);
                 if (s == null)
+                {
                     break; // error situation
-                string indexer = "0";
+                }
+
+                var indexer = "0";
                 if (match.Groups["index"].Value.Length > 0)
                 {
                     indexer = match.Groups["index"].Value;
                 }
 
-                string replacement = "Me.GetValue(tree, TokenType." + s.Name + ", " + indexer + ")";
+                var replacement = "Me.GetValue(tree, TokenType." + s.Name + ", " + indexer + ")";
 
                 codeblock = codeblock.Substring(0, match.Captures[0].Index) + replacement + codeblock.Substring(match.Captures[0].Index + match.Captures[0].Length);
                 match = var.Match(codeblock);
@@ -154,5 +160,4 @@ namespace TinyPG.CodeGenerators.VBNet
             return codeblock;
         }
     }
-
 }
