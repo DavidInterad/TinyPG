@@ -231,6 +231,25 @@ namespace TinyPG.Compiler
             return Directory.Exists(folder) ? folder : null;
         }
 
+        public string GetDtoPath()
+        {
+            var pathOut = Directives["TinyPG"]["DtoPath"];
+            if (Path.IsPathRooted(pathOut))
+            {
+                var fullPath = Path.GetFullPath(pathOut);
+                return Directory.Exists(fullPath) ? fullPath : null;
+            }
+
+            var folder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, pathOut));
+            if (Directory.Exists(folder))
+            {
+                return folder;
+            }
+
+            folder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), pathOut));
+            return Directory.Exists(folder) ? folder : null;
+        }
+
         public string GetOutputPath()
         {
             var pathOut = Directives["TinyPG"]["OutputPath"];

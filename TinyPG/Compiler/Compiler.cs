@@ -10,8 +10,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using TinyPG.CodeGenerators;
@@ -121,6 +123,8 @@ namespace TinyPG.Compiler
                 }
             }
 
+            AddAdditionalSources(sources, language);
+
             if (sources.Count <= 0)
             {
                 return;
@@ -137,6 +141,33 @@ namespace TinyPG.Compiler
             else
             {
                 _assembly = result.CompiledAssembly;
+            }
+        }
+
+        private void AddAdditionalSources(ICollection<string> sources, string language)
+        {
+            var dtoFilePath = _grammar.GetDtoPath();
+            if (dtoFilePath == null)
+            {
+                return;
+            }
+
+            var hasRecords = false;
+            var codeFileExtension = CodeGeneratorFactory.GetCodeFileExtension(language);
+            foreach (var file in Directory.EnumerateFiles(dtoFilePath, $"*{codeFileExtension}"))
+            {
+                var dtoCode = File.ReadAllText(file);
+                if (Regex.IsMatch(dtoCode, @"\brecord\b"))
+                {
+                    hasRecords = true;
+                }
+
+                sources.Add(dtoCode);
+            }
+
+            if (hasRecords)
+            {
+                sources.Add(RecordTypeSource);
             }
         }
 
@@ -217,5 +248,17 @@ namespace TinyPG.Compiler
             compilerResult.Output = output;
             return compilerResult;
         }
+
+        private const string RecordTypeSource = @"using System.ComponentModel;
+
+namespace System.Runtime.CompilerServices
+{
+    /// <summary>
+    /// This one is required by the compiler to allow records and init setters with older .NET versions.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    internal class IsExternalInit { }
+}
+";
     }
 }

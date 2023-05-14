@@ -78,5 +78,20 @@ namespace TinyPG.CodeGenerators
                     return new CSharpCodeProvider();
             }
         }
+
+        public static string GetCodeFileExtension(string language)
+        {
+            switch (language.ToLower(CultureInfo.InvariantCulture))
+            {
+                // set the default templates directory
+                case "visualbasic":
+                case "vbnet":
+                case "vb.net":
+                case "vb":
+                    return ".vb";
+                default:
+                    return "*.cs";
+            }
+        }
     }
 }
