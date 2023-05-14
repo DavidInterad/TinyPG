@@ -236,15 +236,15 @@ namespace TinyPG.Compiler
                         containsEmpty = true;
 
                         // This check does not work (containsEmpty stays always true).
-                        //// if a non-empty sub-rule was found, then stop further parsing.
-                        //foreach (var r in Rules)
-                        //{
-                        //    containsEmpty |= r.DetermineFirstTerminals(firstTerminals);
-                        //    if (!containsEmpty) // found the final set of first terminals
-                        //    {
-                           //     break;
-                        //    }
-                        //}
+                        // if a non-empty sub-rule was found, then stop further parsing.
+                        foreach (var r in Rules)
+                        {
+                            containsEmpty |= r.DetermineFirstTerminals(firstTerminals);
+                            if (!containsEmpty) // found the final set of first terminals
+                            {
+                                break;
+                            }
+                        }
                         break;
                     }
                 default:
