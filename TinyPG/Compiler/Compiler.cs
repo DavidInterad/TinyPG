@@ -92,10 +92,14 @@ namespace TinyPG.Compiler
         {
             var language = _grammar.Directives["TinyPG"]["Language"];
             var provider = CodeGeneratorFactory.CreateCodeDomProvider(language);
+
+            // set KeepFiles to true to debug generated source
+            var tempFileCollection = new CodeDom.TempFileCollection();
             var compilerParams = new CodeDom.CompilerParameters
             {
                 GenerateInMemory = true,
                 GenerateExecutable = false,
+                TempFiles = tempFileCollection,
             };
             compilerParams.ReferencedAssemblies.Add("System.dll");
             compilerParams.ReferencedAssemblies.Add("System.Core.dll");
