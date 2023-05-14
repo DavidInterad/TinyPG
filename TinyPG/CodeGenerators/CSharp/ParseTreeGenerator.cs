@@ -28,10 +28,7 @@ namespace TinyPG.CodeGenerators.CSharp
             // build non terminal tokens
             foreach (var s in grammar.GetNonTerminals())
             {
-                evalSymbols.AppendLine("                case TokenType." + s.Name + ":");
-                evalSymbols.AppendLine("                    Value = Eval" + s.Name + "(tree, paramList);");
-                //evalSymbols.AppendLine("                Value = Token.Text;");
-                evalSymbols.AppendLine("                    break;");
+                evalSymbols.AppendLine($"                TokenType.{s.Name} => Eval{s.Name}(tree, paramList),");
 
                 evalMethods.AppendLine("        protected virtual object Eval" + s.Name + "(ParseTree tree, params object[] paramList)");
                 evalMethods.AppendLine("        {");
@@ -49,7 +46,9 @@ namespace TinyPG.CodeGenerators.CSharp
                     else
                     {
                         evalMethods.AppendLine("            foreach (var node in Nodes)\r\n" +
+                                               "            {\r\n" +
                                                "                node.Eval(tree, paramList);\r\n" +
+                                               "            }\r\n" +
                                                "            return null;");
                     }
 
@@ -67,7 +66,7 @@ namespace TinyPG.CodeGenerators.CSharp
                 parseTree = parseTree.Replace(@"<%IParseNode%>", " : TinyPG.Debug.IParseNode");
                 parseTree = parseTree.Replace(@"<%ITokenGet%>", "public IToken IToken { get {return (IToken)Token;} }");
 
-                const string iNodes = "public List<IParseNode> INodes {get { return nodes.ConvertAll<IParseNode>( new Converter<ParseNode, IParseNode>( delegate(ParseNode n) { return (IParseNode)n; })); }}\r\n\r\n";
+                const string iNodes = "public List<IParseNode> INodes { get { return Nodes.ConvertAll<IParseNode>(new Converter<ParseNode, IParseNode>(n => (IParseNode)n)); }}\r\n\r\n";
                 parseTree = parseTree.Replace(@"<%INodesGet%>", iNodes);
             }
             else
@@ -114,7 +113,7 @@ namespace TinyPG.CodeGenerators.CSharp
                 var s = symbols.Find(match.Groups["var"].Value);
                 if (s == null)
                 {
-                    //TOD: handle error situation
+                    //TODO: handle error situation
                     //Errors.Add("Variable $" + match.Groups["var"].Value + " cannot be matched.");
                     break; // error situation
                 }

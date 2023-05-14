@@ -3,7 +3,6 @@
 // </auto-generated>
 
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 
 // Disable unused variable warnings which
 // can happen during the parser generation.
@@ -16,31 +15,22 @@ namespace <%Namespace%>
     [GeneratedCode("TinyPG", "1.4")]
     public partial class Parser <%IParser%>
     {
-        private Scanner scanner;
-        private ParseTree tree;
+        private readonly Scanner _scanner;
+        private ParseTree _tree;
 
-        public Parser(Scanner scanner)
-        {
-            this.scanner = scanner;
-        }
+        public Parser(Scanner scanner) => _scanner = scanner;
 
-         public <%IParseTree%> Parse(string input)
-        {
-            return Parse(input, "", new ParseTree());
-        }
+        public <%IParseTree%> Parse(string input) => Parse(input, "", new ParseTree());
 
-        public <%IParseTree%> Parse(string input, string fileName)
-        {
-            return Parse(input, fileName, new ParseTree());
-        }
+        public <%IParseTree%> Parse(string input, string fileName) => Parse(input, fileName, new ParseTree());
 
         public <%IParseTree%> Parse(string input, string fileName, ParseTree tree)
         {
-            scanner.Init(input, fileName);
+            _scanner.Init(input, fileName);
 
-            this.tree = tree;
+            _tree = tree;
             ParseStart(tree);
-            tree.Skipped = scanner.Skipped;
+            tree.Skipped = _scanner.Skipped;
 
             return tree;
         }

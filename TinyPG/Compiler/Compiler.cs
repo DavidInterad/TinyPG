@@ -109,9 +109,9 @@ namespace TinyPG.Compiler
             foreach (var d in _grammar.Directives)
             {
                 var generator = CodeGeneratorFactory.CreateGenerator(d.Name, language);
-                if (generator != null && d.ContainsKey("FileName"))
+                if (generator != null && d.TryGetValue("FileName", out var fileName))
                 {
-                    generator.FileName = d["FileName"];
+                    generator.FileName = fileName;
                 }
 
                 if (generator != null && d["Generate"].ToLower() == "true")
@@ -130,7 +130,7 @@ namespace TinyPG.Compiler
             {
                 foreach (CodeDom.CompilerError o in result.Errors)
                 {
-                    Errors.Add(o.ErrorText + " on line " + o.Line);
+                    Errors.Add($"{o.ErrorText} on line {o.Line}");
                 }
             }
             else
@@ -159,7 +159,7 @@ namespace TinyPG.Compiler
             var scannerInstance = _assembly.CreateInstance("TinyPG.Debug.Scanner");
             var scanner = scannerInstance.GetType();
 
-            object parserInstance = (IParser)_assembly.CreateInstance("TinyPG.Debug.Parser", true, BindingFlags.CreateInstance, null, new[] { scannerInstance }, null, null);
+            var parserInstance = (IParser)_assembly.CreateInstance("TinyPG.Debug.Parser", true, BindingFlags.CreateInstance, null, new[] { scannerInstance }, null, null);
             var parserType = parserInstance.GetType();
 
             var treeInstance = parserType.InvokeMember("Parse", BindingFlags.InvokeMethod, null, parserInstance, new object[] { input, string.Empty });

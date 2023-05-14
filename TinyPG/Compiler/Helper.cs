@@ -32,7 +32,7 @@ namespace System.Text
         {
             var r = Indent(indent1);
             r += text1;
-            r = r.PadRight((indent2 * 4)%256, ' ');
+            r = r.PadRight(indent2 * 4 % 256, ' ');
             r += text2;
             return r;
         }
@@ -67,5 +67,5 @@ namespace System.Text
             return "";
 #endif
         }
-   }
+    }
 }

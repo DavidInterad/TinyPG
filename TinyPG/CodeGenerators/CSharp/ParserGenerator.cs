@@ -56,14 +56,16 @@ namespace TinyPG.CodeGenerators.CSharp
 			sb.AppendLine("        {");
 			sb.AppendLine("            Token tok;");
 			sb.AppendLine("            ParseNode n;");
-			sb.AppendLine("            ParseNode node = parent.CreateNode(scanner.GetToken(TokenType." + s.Name + "), \"" + s.Name + "\");");
+			sb.AppendLine("            ParseNode node = parent.CreateNode(_scanner.GetToken(TokenType." + s.Name + "), \"" + s.Name + "\");");
 			sb.AppendLine("            parent.Nodes.Add(node);");
 			sb.AppendLine("");
 
-			foreach (var rule in s.Rules)
+			var productionRuleCodes = s.Rules
+				.Select(rule => GenerateProductionRuleCode(s.Rules[0], 3))
+				.Where(productionRuleCode => !string.IsNullOrWhiteSpace(productionRuleCode));
+			foreach (var productionRuleCode in productionRuleCodes)
 			{
-				// TODO check if s.Rules[0] should actually be rule
-				sb.AppendLine(GenerateProductionRuleCode(s.Rules[0], 3));
+				sb.AppendLine(productionRuleCode);
 			}
 
 			sb.AppendLine("            parent.Token.UpdateRange(node.Token);");
@@ -84,12 +86,13 @@ namespace TinyPG.CodeGenerators.CSharp
 			{
 				case RuleType.Terminal:
 					// expecting terminal, so scan it.
-					sb.AppendLine($"{tabs}tok = scanner.Scan(TokenType.{r.Symbol.Name});{Helper.AddComment("Terminal Rule: " + r.Symbol.Name)}");
+					sb.AppendLine($"{tabs}tok = _scanner.Scan(TokenType.{r.Symbol.Name});{Helper.AddComment("Terminal Rule: " + r.Symbol.Name)}");
 					sb.AppendLine($"{tabs}n = node.CreateNode(tok, tok.ToString() );");
 					sb.AppendLine($"{tabs}node.Token.UpdateRange(tok);");
 					sb.AppendLine($"{tabs}node.Nodes.Add(n);");
 					sb.AppendLine($"{tabs}if (tok.Type != TokenType.{r.Symbol.Name}) {{");
-					sb.AppendLine($"{tabs}    tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected \" + TokenType.{r.Symbol.Name}.ToString(), 0x1001, tok));");
+					sb.AppendLine(
+						$"{tabs}    _tree.Errors.Add(new ParseError($\"Unexpected token '{{tok.Text.Replace(\"\\n\", \"\")}}' found. Expected {{TokenType.{r.Symbol.Name}}}\", 0x1001, tok));");
 					sb.AppendLine($"{tabs}    return;");
 					sb.AppendLine($"{tabs}}}");
 					break;
@@ -100,14 +103,19 @@ namespace TinyPG.CodeGenerators.CSharp
 					foreach (var rule in r.Rules)
 					{
 						sb.AppendLine();
-						sb.AppendLine(tabs + Helper.AddComment("Concat Rule"));
+						var comment = tabs + Helper.AddComment("Concat Rule");
+						if (!string.IsNullOrWhiteSpace(comment))
+						{
+							sb.AppendLine(comment);
+						}
+
 						sb.Append(GenerateProductionRuleCode(rule, indent));
 					}
 					break;
 				case RuleType.ZeroOrMore:
 					firsts = r.GetFirstTerminals();
 					i = 0;
-					sb.Append($"{tabs}tok = scanner.LookAhead(");
+					sb.Append($"{tabs}tok = _scanner.LookAhead(");
 					foreach (var s in firsts)
 					{
 						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
@@ -119,8 +127,8 @@ namespace TinyPG.CodeGenerators.CSharp
 					foreach (var s in firsts)
 					{
 						sb.Append(i == 0
-							? $"{tabs}while (tok.Type == TokenType.{s.Name}"
-							: $"\r\n{tabs}    || tok.Type == TokenType.{s.Name}");
+							? $"{tabs}while (tok.Type is TokenType.{s.Name}"
+							: $"\r\n{tabs}    or TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(")");
@@ -132,7 +140,7 @@ namespace TinyPG.CodeGenerators.CSharp
 					}
 
 					i = 0;
-					sb.Append(tabs + "tok = scanner.LookAhead(");
+					sb.Append(tabs + "    tok = _scanner.LookAhead(");
 					foreach (var s in firsts)
 					{
 						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
@@ -151,7 +159,7 @@ namespace TinyPG.CodeGenerators.CSharp
 
 					i = 0;
 					firsts = r.GetFirstTerminals();
-					sb.Append(tabs + "    tok = scanner.LookAhead(");
+					sb.Append(tabs + "    tok = _scanner.LookAhead(");
 					foreach (var s in firsts)
 					{
 						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
@@ -162,7 +170,7 @@ namespace TinyPG.CodeGenerators.CSharp
 					i = 0;
 					foreach (var s in firsts)
 					{
-						sb.Append(i == 0 ? $"{tabs}}} while (tok.Type == TokenType.{s.Name}" : $"\r\n{tabs}    || tok.Type == TokenType.{s.Name}");
+						sb.Append(i == 0 ? $"{tabs}}} while (tok.Type is TokenType.{s.Name}" : $"\r\n{tabs}    or TokenType.{s.Name}");
 						i++;
 					}
 					sb.AppendLine(");" + Helper.AddComment("OneOrMore Rule"));
@@ -170,7 +178,7 @@ namespace TinyPG.CodeGenerators.CSharp
 				case RuleType.Option:
 					i = 0;
 					firsts = r.GetFirstTerminals();
-					sb.Append(tabs + "tok = scanner.LookAhead(");
+					sb.Append(tabs + "tok = _scanner.LookAhead(");
 					foreach (var s in firsts)
 					{
 						sb.Append(i == 0 ? $"TokenType.{s.Name}" : $", TokenType.{s.Name}");
@@ -198,7 +206,7 @@ namespace TinyPG.CodeGenerators.CSharp
 				case RuleType.Choice:
 					i = 0;
 					firsts = r.GetFirstTerminals();
-					sb.Append($"{tabs}tok = scanner.LookAhead(");
+					sb.Append($"{tabs}tok = _scanner.LookAhead(");
 					var tokens = new List<string>();
 					foreach (var s in firsts)
 					{
@@ -234,7 +242,7 @@ namespace TinyPG.CodeGenerators.CSharp
 						sb.AppendLine(tabs + "        break;");
 					}
 					sb.AppendLine(tabs + "    default:");
-					sb.AppendLine(tabs + "        tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected " + expectedTokens + ".\", 0x0002, tok));");
+					sb.AppendLine(tabs + "        _tree.Errors.Add(new ParseError(\"Unexpected token '\" + tok.Text.Replace(\"\\n\", \"\") + \"' found. Expected " + expectedTokens + ".\", 0x0002, tok));");
 					sb.AppendLine(tabs + "        break;");
 					sb.AppendLine(tabs + "}" + Helper.AddComment("Choice Rule"));
 					break;

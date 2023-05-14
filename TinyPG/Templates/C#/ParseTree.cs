@@ -5,6 +5,8 @@
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
 
@@ -22,48 +24,43 @@ namespace <%Namespace%>
     [Serializable]
     public class ParseError<%ParseError%>
     {
-        private string file;
-        private string message;
-        private int code;
-        private int line;
-        private int col;
-        private int pos;
-        private int length;
-
-        public string File { get { return file; } }
-        public int Code { get { return code; } }
-        public int Line { get { return line; } }
-        public int Column { get { return col; } }
-        public int Position { get { return pos; } }
-        public int Length { get { return length; } }
-        public string Message { get { return message; } }
+        public string File { get; }
+        public int Code { get; }
+        public int Line { get; }
+        public int Column { get; }
+        public int Position { get; }
+        public int Length { get; }
+        public string Message { get; }
 
         // just for the sake of serialization
         public ParseError()
         {
         }
 
-        public ParseError(string message, int code, ParseNode node) : this(message, code, node.Token)
+        public ParseError(string message, int code, ParseNode node)
+            : this(message, code, node.Token)
         {
         }
 
-        public ParseError(string message, int code, Token token) : this(message, code, token.File, token.Line, token.Column, token.StartPos, token.Length)
+        public ParseError(string message, int code, Token token)
+            : this(message, code, token.File, token.Line, token.Column, token.StartPos, token.Length)
         {
         }
 
-        public ParseError(string message, int code) : this(message, code, string.Empty, 0, 0, 0, 0)
+        public ParseError(string message, int code)
+            : this(message, code, string.Empty, 0, 0, 0, 0)
         {
         }
 
         public ParseError(string message, int code, string file, int line, int col, int pos, int length)
         {
-            this.file = file;
-            this.message = message;
-            this.code = code;
-            this.line = line;
-            this.col = col;
-            this.pos = pos;
-            this.length = length;
+            File = file;
+            Message = message;
+            Code = code;
+            Line = line;
+            Column = col;
+            Position = pos;
+            Length = length;
         }
     }
 
@@ -86,32 +83,29 @@ namespace <%Namespace%>
         public string PrintTree()
         {
             StringBuilder sb = new StringBuilder();
-            int indent = 0;
-            PrintNode(sb, this, indent);
+            PrintNode(sb, this, 0);
             return sb.ToString();
         }
 
         private void PrintNode(StringBuilder sb, ParseNode node, int indent)
         {
-
             string space = "".PadLeft(indent, ' ');
 
             sb.Append(space);
             sb.AppendLine(node.Text);
 
             foreach (ParseNode n in node.Nodes)
+            {
                 PrintNode(sb, n, indent + 2);
+            }
         }
 
         /// <summary>
         /// this is the entry point for executing and evaluating the parse tree.
         /// </summary>
-        /// <param name="paramlist">additional optional input parameters</param>
+        /// <param name="paramList">additional optional input parameters</param>
         /// <returns>the output of the evaluation function</returns>
-        public object Eval(params object[] paramlist)
-        {
-            return Nodes[0].Eval(this, paramlist);
-        }
+        public object Eval(params object[] paramList) => Nodes[0].Eval(this, paramList);
     }
 
     [GeneratedCode("TinyPG", "1.4")]
@@ -119,33 +113,26 @@ namespace <%Namespace%>
     [XmlInclude(typeof(ParseTree))]
     public partial class ParseNode<%IParseNode%>
     {
-        protected string text;
-        protected List<ParseNode> nodes;
         <%ITokenGet%>
-        public List<ParseNode> Nodes { get {return nodes;} }
+        public List<ParseNode> Nodes { get; }
         <%INodesGet%>
         [XmlIgnore] // avoid circular references when serializing
         public ParseNode Parent;
         public Token Token; // the token/rule
 
+        /// <summary>
+        /// Text to display in parse tree.
+        /// </summary>
         [XmlIgnore] // skip redundant text (is part of Token)
-        public string Text { // text to display in parse tree
-            get { return text;}
-            set { text = value; }
-        }
+        public string Text { get; set; }
 
-        public virtual ParseNode CreateNode(Token token, string text)
-        {
-            ParseNode node = new ParseNode(token, text);
-            node.Parent = this;
-            return node;
-        }
+        public virtual ParseNode CreateNode(Token token, string text) => new ParseNode(token, text) { Parent = this };
 
         protected ParseNode(Token token, string text)
         {
-            this.Token = token;
-            this.text = text;
-            this.nodes = new List<ParseNode>();
+            Token = token;
+            Text = text;
+            Nodes = new List<ParseNode>();
         }
 
         protected object GetValue(ParseTree tree, TokenType type, int index)
@@ -178,21 +165,14 @@ namespace <%Namespace%>
         /// this implements the evaluation functionality, cannot be used directly
         /// </summary>
         /// <param name="tree">the parsetree itself</param>
-        /// <param name="paramlist">optional input parameters</param>
+        /// <param name="paramList">optional input parameters</param>
         /// <returns>a partial result of the evaluation</returns>
-        internal object Eval(ParseTree tree, params object[] paramlist)
-        {
-            object Value = null;
-
-            switch (Token.Type)
+        internal object Eval(ParseTree tree, params object[] paramList) =>
+            Token.Type switch
             {
 <%EvalSymbols%>
-                default:
-                    Value = Token.Text;
-                    break;
-            }
-            return Value;
-        }
+                _ => Token.Text,
+            };
 
 <%VirtualEvalMethods%>
     }

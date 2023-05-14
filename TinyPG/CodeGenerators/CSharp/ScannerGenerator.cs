@@ -27,12 +27,12 @@ namespace TinyPG.CodeGenerators.CSharp
 
             foreach (var s in grammar.SkipSymbols)
             {
-                skipList.AppendLine("            SkipList.Add(TokenType." + s.Name + ");");
+                skipList.AppendLine("            _skipList.Add(TokenType." + s.Name + ");");
             }
 
             if (grammar.FileAndLine != null)
             {
-                skipList.AppendLine("            FileAndLine = TokenType." + grammar.FileAndLine.Name + ";");
+                skipList.AppendLine("            _fileAndLine = TokenType." + grammar.FileAndLine.Name + ";");
             }
 
             // build system tokens
@@ -50,7 +50,6 @@ namespace TinyPG.CodeGenerators.CSharp
 
             // build terminal tokens
             tokenType.AppendLine("\r\n            //Terminal tokens:");
-            var first = true;
             foreach (var s in grammar.GetTerminals())
             {
                 regexps.Append($"            regex = new Regex({s.Expression}, RegexOptions.Compiled");
@@ -63,24 +62,15 @@ namespace TinyPG.CodeGenerators.CSharp
                 regexps.Append(");\r\n");
 
                 regexps.Append($"            Patterns.Add(TokenType.{s.Name}, regex);\r\n");
-                regexps.Append($"            Tokens.Add(TokenType.{s.Name});\r\n\r\n");
+                regexps.Append($"            _tokens.Add(TokenType.{s.Name});\r\n\r\n");
 
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    tokenType.AppendLine(",");
-                }
-
-                tokenType.Append(Helper.Outline(s.Name, 3, $"= {counter:d}", 5));
+                tokenType.Append(Helper.Outline(s.Name, 3, $"= {counter:d}", 5)).AppendLine(",");
                 counter++;
             }
 
             scanner = scanner.Replace(@"<%SkipList%>", skipList.ToString());
-            scanner = scanner.Replace(@"<%RegExps%>", regexps.ToString());
-            scanner = scanner.Replace(@"<%TokenType%>", tokenType.ToString());
+            scanner = scanner.Replace(@"<%RegExps%>", regexps.ToString().TrimEnd());
+            scanner = scanner.Replace(@"<%TokenType%>", tokenType.ToString().TrimEnd());
 
             if (debug)
             {
