@@ -221,13 +221,13 @@ namespace TinyPG.Compiler
                 return Directory.Exists(fullPath) ? fullPath : null;
             }
 
-            var folder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, pathOut));
+            var folder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), pathOut));
             if (Directory.Exists(folder))
             {
                 return folder;
             }
 
-            folder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), pathOut));
+            folder = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, pathOut));
             return Directory.Exists(folder) ? folder : null;
         }
 
