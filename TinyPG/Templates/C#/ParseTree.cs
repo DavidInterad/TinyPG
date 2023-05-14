@@ -135,31 +135,41 @@ namespace <%Namespace%>
             Nodes = new List<ParseNode>();
         }
 
-        protected object GetValue(ParseTree tree, TokenType type, int index)
-        {
-            return GetValue(tree, type, ref index);
-        }
+        protected object GetValue(ParseTree tree, TokenType type, int index) =>
+            GetValue<object>(tree, type, ref index);
 
-        protected object GetValue(ParseTree tree, TokenType type, ref int index)
+        protected object GetValue(ParseTree tree, TokenType type, ref int index) =>
+            GetValue<object>(tree, type, ref index);
+
+        protected T GetValue<T>(ParseTree tree, TokenType type, int index) =>
+            GetValue<T>(tree, type, ref index);
+
+        protected T GetValue<T>(ParseTree tree, TokenType type, ref int index)
         {
-            object o = null;
-            if (index < 0) return o;
+            if (index < 0)
+            {
+                return default;
+            }
 
             // left to right
-            foreach (ParseNode node in nodes)
+            foreach (var node in Nodes.Where(node => node.Token.Type == type))
             {
-                if (node.Token.Type == type)
+                index--;
+                if (index >= 0)
                 {
-                    index--;
-                    if (index < 0)
-                    {
-                        o = node.Eval(tree);
-                        break;
-                    }
+                    continue;
                 }
+
+                return (T)node.Eval(tree);
             }
-            return o;
+
+            return default;
         }
+
+        protected IList<object> GetValues(ParseTree tree, TokenType type) => GetValues<object>(tree, type);
+
+        protected IList<T> GetValues<T>(ParseTree tree, TokenType type) =>
+            Nodes.Where(node => node.Token.Type == type).Select(node => (T)node.Eval(tree)).ToList();
 
         /// <summary>
         /// this implements the evaluation functionality, cannot be used directly

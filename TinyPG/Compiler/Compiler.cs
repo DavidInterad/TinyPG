@@ -95,6 +95,7 @@ namespace TinyPG.Compiler
                 GenerateExecutable = false,
             };
             compilerParams.ReferencedAssemblies.Add("System.dll");
+            compilerParams.ReferencedAssemblies.Add("System.Core.dll");
             compilerParams.ReferencedAssemblies.Add("System.Windows.Forms.dll");
             compilerParams.ReferencedAssemblies.Add("System.Drawing.dll");
             compilerParams.ReferencedAssemblies.Add("System.Xml.dll");

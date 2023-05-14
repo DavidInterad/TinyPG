@@ -100,14 +100,14 @@ namespace TinyPG.CodeGenerators.CSharp
                 return "";
             }
 
-            var codeblock = nts.CodeBlock;
+            var codeBlock = nts.CodeBlock;
 
-            var var = new Regex(@"\$(?<var>[a-zA-Z_0-9]+)(\[(?<index>[^]]+)\])?", RegexOptions.Compiled);
+            var varRegex = new Regex(@"\$(?<var>[a-zA-Z_0-9]+)(?:<(?<type>(?><(?<c>)|[^<>]+|>(?<-c>))*(?(c)(?!)))>)?(?<bracket>\[(?<index>[^]]*)\])?", RegexOptions.Compiled);
 
             var symbols = nts.DetermineProductionSymbols();
 
 
-            var match = var.Match(codeblock);
+            var match = varRegex.Match(codeBlock);
             while (match.Success)
             {
                 var s = symbols.Find(match.Groups["var"].Value);
@@ -117,20 +117,28 @@ namespace TinyPG.CodeGenerators.CSharp
                     //Errors.Add("Variable $" + match.Groups["var"].Value + " cannot be matched.");
                     break; // error situation
                 }
-                var indexer = "0";
-                if (match.Groups["index"].Value.Length > 0)
+
+                string replacement;
+                var variableType = match.Groups["type"].Value;
+                var type = variableType.Length > 0 ? $"<{variableType}>" : "";
+
+                // Match list of variables
+                if (match.Groups["bracket"].Value == "[]")
                 {
-                    indexer = match.Groups["index"].Value;
+                    replacement = $"GetValues{type}(tree, TokenType.{s.Name})";
+                }
+                else
+                {
+                    var indexer = match.Groups["index"].Value.Length > 0 ? match.Groups["index"].Value : "0";
+                    replacement = $"GetValue{type}(tree, TokenType.{s.Name}, {indexer})";
                 }
 
-                var replacement = "this.GetValue(tree, TokenType." + s.Name + ", " + indexer + ")";
-
-                codeblock = codeblock.Substring(0, match.Captures[0].Index) + replacement + codeblock.Substring(match.Captures[0].Index + match.Captures[0].Length);
-                match = var.Match(codeblock);
+                codeBlock = codeBlock.Substring(0, match.Captures[0].Index) + replacement + codeBlock.Substring(match.Captures[0].Index + match.Captures[0].Length);
+                match = varRegex.Match(codeBlock);
             }
 
-            codeblock = "            " + codeblock.Replace("\n", "\r\n        ");
-            return codeblock;
+            codeBlock = "            " + codeBlock.Replace("\n", "\r\n        ");
+            return codeBlock;
         }
     }
 }
