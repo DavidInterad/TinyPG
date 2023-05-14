@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using TinyPG.Controls;
 
 namespace TinyPG.Highlighter
 {
@@ -214,9 +215,9 @@ namespace TinyPG.Highlighter
 
         public bool CanRedo => _undoIndex < _undoList.Count;
 
-        public TextHighlighter(RichTextBox textBox, Scanner scanner, Parser parser)
+        public TextHighlighter(NumberedTextBox textBox, Scanner scanner, Parser parser)
         {
-            TextBox = textBox;
+            TextBox = textBox.RichTextBox;
             _scanner = scanner;
             _parser = parser;
 

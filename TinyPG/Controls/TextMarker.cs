@@ -36,9 +36,9 @@ namespace TinyPG.Controls
             public string ToolTip;
         }
 
-        public TextMarker(RichTextBox textBox)
+        public TextMarker(NumberedTextBox textBox)
         {
-            TextBox = textBox;
+            TextBox = textBox.RichTextBox;
             TextBox.MouseMove += TextBoxMouseMove;
             AssignHandle(TextBox.Handle);
             _toolTip = new ToolTip();

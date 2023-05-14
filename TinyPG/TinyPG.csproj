@@ -97,6 +97,12 @@
     <Compile Include="Controls\HeaderExtender.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Controls\NumberedTextBox.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\NumberedTextBox.Designer.cs">
+      <DependentUpon>NumberedTextBox.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\TabControlEx.cs">
       <SubType>Component</SubType>
     </Compile>

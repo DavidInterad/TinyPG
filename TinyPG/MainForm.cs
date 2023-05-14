@@ -570,7 +570,7 @@ namespace TinyPG
 
                 if (_compiler?.IsCompiled == true)
                 {
-                    var result = _compiler.Run(textInput.Text, textInput);
+                    var result = _compiler.Run(textInput.Text, textInput.RichTextBox);
 
                     //textOutput.Text = result.ParseTree.PrintTree();
                     textOutput.Text += result.Output;
@@ -715,7 +715,7 @@ namespace TinyPG
             var text = $"//{AssemblyInfo.ProductName} v{Application.ProductVersion}\r\n";
             text += $"//{AssemblyInfo.CopyRightsDetail}\r\n\r\n";
             textEditor.Text = text;
-            textEditor.ClearUndo();
+            textEditor.RichTextBox.ClearUndo();
 
             textOutput.Text = $"{AssemblyInfo.ProductName} v{Application.ProductVersion}\r\n";
             textOutput.Text += $"{AssemblyInfo.CopyRightsDetail}\r\n\r\n";
@@ -748,7 +748,7 @@ namespace TinyPG
             Directory.SetCurrentDirectory(folder);
 
             textEditor.Text = File.ReadAllText(_grammarFile);
-            textEditor.ClearUndo();
+            textEditor.RichTextBox.ClearUndo();
             CompileGrammar();
             textOutput.Text = "";
             textEditor.Focus();
@@ -864,18 +864,18 @@ namespace TinyPG
         {
             if (textEditor.Focused)
             {
-                var pos = textEditor.SelectionStart;
+                var pos = textEditor.RichTextBox.SelectionStart;
                 statusPos.Text = pos.ToString(CultureInfo.InvariantCulture);
-                statusCol.Text = (pos - textEditor.GetFirstCharIndexOfCurrentLine() + 1).ToString(CultureInfo.InvariantCulture);
-                statusLine.Text = (textEditor.GetLineFromCharIndex(pos) + 1).ToString(CultureInfo.InvariantCulture);
+                statusCol.Text = (pos - textEditor.RichTextBox.GetFirstCharIndexOfCurrentLine() + 1).ToString(CultureInfo.InvariantCulture);
+                statusLine.Text = (textEditor.RichTextBox.GetLineFromCharIndex(pos) + 1).ToString(CultureInfo.InvariantCulture);
 
             }
             else if (textInput.Focused)
             {
-                var pos = textInput.SelectionStart;
+                var pos = textInput.RichTextBox.SelectionStart;
                 statusPos.Text = pos.ToString(CultureInfo.InvariantCulture);
-                statusCol.Text = (pos - textInput.GetFirstCharIndexOfCurrentLine() + 1).ToString(CultureInfo.InvariantCulture);
-                statusLine.Text = (textInput.GetLineFromCharIndex(pos) + 1).ToString(CultureInfo.InvariantCulture);
+                statusCol.Text = (pos - textInput.RichTextBox.GetFirstCharIndexOfCurrentLine() + 1).ToString(CultureInfo.InvariantCulture);
+                statusLine.Text = (textInput.RichTextBox.GetLineFromCharIndex(pos) + 1).ToString(CultureInfo.InvariantCulture);
             }
             else
             {

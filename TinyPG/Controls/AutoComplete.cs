@@ -47,9 +47,9 @@ namespace TinyPG.Controls
             }
         }
 
-        public AutoComplete(RichTextBox editor)
+        public AutoComplete(NumberedTextBox editor)
         {
-            _textEditor = editor;
+            _textEditor = editor.RichTextBox;
             _textEditor.KeyDown += editor_KeyDown;
             _textEditor.KeyUp += textEditor_KeyUp;
             _textEditor.LostFocus += textEditor_LostFocus;
