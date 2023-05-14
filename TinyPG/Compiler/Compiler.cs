@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
@@ -236,7 +237,10 @@ namespace TinyPG.Compiler
                 try
                 {
                     compilerResult.Value = iTree.Eval(null);
-                    output += "\r\nResult: " + (compilerResult.Value == null ? "null" : compilerResult.Value.ToString());
+                    output += "\r\nResult: " + JsonSerializer.Serialize(compilerResult.Value, new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                    });
                 }
                 catch (Exception exc)
                 {
