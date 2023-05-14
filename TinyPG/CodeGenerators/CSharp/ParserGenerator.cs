@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators.CSharp
@@ -40,7 +41,8 @@ namespace TinyPG.CodeGenerators.CSharp
 			else
 			{
 				parser = parser.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
-				parser = parser.Replace(@"<%IParser%>", "");
+				parser = Regex.Replace(parser, @"\s*<%IParser%>", "");
+				//parser = parser.Replace(@"<%IParser%>", "");
 				parser = parser.Replace(@"<%IParseTree%>", "ParseTree");
 			}
 

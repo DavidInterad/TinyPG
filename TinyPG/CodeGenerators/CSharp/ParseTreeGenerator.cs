@@ -72,15 +72,15 @@ namespace TinyPG.CodeGenerators.CSharp
             else
             {
                 parseTree = parseTree.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
-                parseTree = parseTree.Replace(@"<%ParseError%>", "");
+                parseTree = Regex.Replace(parseTree, @"\s*<%ParseError%>", "");
                 parseTree = parseTree.Replace(@"<%ParseErrors%>", "List<ParseError>");
-                parseTree = parseTree.Replace(@"<%IParseTree%>", "");
-                parseTree = parseTree.Replace(@"<%IParseNode%>", "");
-                parseTree = parseTree.Replace(@"<%ITokenGet%>", "");
-                parseTree = parseTree.Replace(@"<%INodesGet%>", "");
+                parseTree = Regex.Replace(parseTree, @"\s*<%IParseTree%>", "");
+                parseTree = Regex.Replace(parseTree, @"\s*<%IParseNode%>", "");
+                parseTree = Regex.Replace(parseTree, @"\s*<%ITokenGet%>", "");
+                parseTree = Regex.Replace(parseTree, @"\s*<%INodesGet%>", "");
             }
 
-            parseTree = parseTree.Replace(@"<%EvalSymbols%>", evalSymbols.ToString());
+            parseTree = Regex.Replace(parseTree, @"[ \t]*<%EvalSymbols%>\r?\n?", evalSymbols.ToString());
             parseTree = parseTree.Replace(@"<%VirtualEvalMethods%>", evalMethods.ToString());
 
             return parseTree;

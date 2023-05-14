@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using TinyPG.Compiler;
 
 namespace TinyPG.CodeGenerators.CSharp
@@ -80,7 +81,7 @@ namespace TinyPG.CodeGenerators.CSharp
             else
             {
                 scanner = scanner.Replace(@"<%Namespace%>", grammar.Directives["TinyPG"]["Namespace"]);
-                scanner = scanner.Replace(@"<%IToken%>", "");
+                scanner = Regex.Replace(scanner, @"\s*<%IToken%>", "");
             }
 
             return scanner;
