@@ -208,6 +208,7 @@ namespace TinyPG.Compiler
                     names.Add("Namespace");
                     names.Add("OutputPath");
                     names.Add("TemplatePath");
+                    names.Add("DtoPath");
                     names.Add("Language");
 
                     switch (key)
@@ -226,6 +227,15 @@ namespace TinyPG.Compiler
                             if (grammar.GetOutputPath() == null)
                             {
                                 tree.Errors.Add(new ParseError($"Output path '{value}' does not exist", 0x1061, node.Nodes[2]));
+                            }
+
+                            break;
+                        }
+                        case "DtoPath":
+                        {
+                            if (grammar.GetDtoPath() == null)
+                            {
+                                tree.Errors.Add(new ParseError($"DTO path '{value}' does not exist", 0x1061, node.Nodes[2]));
                             }
 
                             break;
