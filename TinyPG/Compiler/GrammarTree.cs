@@ -28,15 +28,8 @@ namespace TinyPG.Compiler
     /// </summary>
     public class GrammarNode : ParseTree
     {
-
-        public override ParseNode CreateNode(Token token, string text)
-        {
-            var node = new GrammarNode(token, text)
-            {
-                Parent = this,
-            };
-            return node;
-        }
+        public override ParseNode CreateNode(Token token, string text) =>
+            new GrammarNode(token, text) { Parent = this };
 
         protected GrammarNode()
         {
@@ -45,8 +38,8 @@ namespace TinyPG.Compiler
         protected GrammarNode(Token token, string text)
         {
             Token = token;
-            this.text = text;
-            nodes = new List<ParseNode>();
+            Text = text;
+            Nodes = new List<ParseNode>();
         }
 
         /// <summary>

@@ -101,42 +101,30 @@ namespace TinyPG
 	[XmlInclude(typeof(ParseTree))]
 	public class ParseNode
 	{
-		protected string text;
-		protected List<ParseNode> nodes;
-
-		public List<ParseNode> Nodes => nodes;
+		public List<ParseNode> Nodes { get; protected set; }
 
 		[XmlIgnore] // avoid circular references when serializing
 		public ParseNode Parent;
 		public Token Token; // the token/rule
 
+		/// <summary>
+		/// text to display in parse tree
+		/// </summary>
 		[XmlIgnore] // skip redundant text (is part of Token)
-		public string Text
-		{ // text to display in parse tree
-			get => text;
-			set => text = value;
-		}
+		public string Text { get; set; }
 
-		public virtual ParseNode CreateNode(Token token, string text)
-		{
-			var node = new ParseNode(token, text)
-			{
-				Parent = this,
-			};
-			return node;
-		}
+		public virtual ParseNode CreateNode(Token token, string text) =>
+			new ParseNode(token, text) { Parent = this };
 
 		protected ParseNode(Token token, string text)
 		{
 			Token = token;
-			this.text = text;
-			nodes = new List<ParseNode>();
+			Text = text;
+			Nodes = new List<ParseNode>();
 		}
 
-		protected object GetValue(ParseTree tree, TokenType type, int index)
-		{
-			return GetValue(tree, type, ref index);
-		}
+		protected object GetValue(ParseTree tree, TokenType type, int index) =>
+			GetValue(tree, type, ref index);
 
 		protected object GetValue(ParseTree tree, TokenType type, ref int index)
 		{
@@ -147,7 +135,7 @@ namespace TinyPG
 
 			// left to right
 			object o = null;
-			foreach (var node in nodes.Where(node => node.Token.Type == type))
+			foreach (var node in Nodes.Where(node => node.Token.Type == type))
 			{
 				index--;
 				if (index >= 0)
