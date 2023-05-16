@@ -333,19 +333,6 @@ namespace TinyPG.Compiler
                     }
 
                     break;
-                case "FileAndLine":
-                    if (symbol is TerminalSymbol)
-                    {
-                        grammar.SkipSymbols.Add(symbol);
-                        grammar.FileAndLine = symbol;
-                    }
-                    else
-                    {
-                        tree.Errors.Add(new ParseError(
-                            $"Attribute for non-terminal rule not allowed: {node.Nodes[1].Token.Text}", 0x1035, node));
-                    }
-
-                    break;
                 default:
                     tree.Errors.Add(new ParseError($"Attribute not supported: {node.Nodes[1].Token.Text}", 0x1036, node.Nodes[1]));
                     break;

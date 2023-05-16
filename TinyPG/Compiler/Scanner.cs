@@ -24,7 +24,6 @@ namespace TinyPG
         private Token _lookAheadToken;
         private readonly List<TokenType> _tokens;
         private readonly List<TokenType> _skipList; // tokens to be skipped
-        private readonly TokenType FileAndLine;
 
         public Scanner()
         {
@@ -252,24 +251,6 @@ namespace TinyPG
                     // only assign to non-skipped tokens
                     tok.Skipped = Skipped; // assign prior skips to this token
                     Skipped = new List<Token>(); //reset skips
-                }
-
-                // Check to see if the parsed token wants to
-                // alter the file and line number.
-                if (tok.Type == FileAndLine)
-                {
-                    var match = Patterns[tok.Type].Match(tok.Text);
-                    var fileMatch = match.Groups["File"];
-                    if (fileMatch.Success)
-                    {
-                        currentFile = fileMatch.Value.Replace("\\\\", "\\");
-                    }
-
-                    var lineMatch = match.Groups["Line"];
-                    if (lineMatch.Success)
-                    {
-                        currentLine = int.Parse(lineMatch.Value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-                    }
                 }
             }
             while (_skipList.Contains(tok.Type));

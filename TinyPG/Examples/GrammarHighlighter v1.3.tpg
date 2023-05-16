@@ -15,7 +15,7 @@
 // improved COMMENTBLOCK, will also match comment optionally with non-closing tags
 [Color(0, 128, 0)]	GRAMMARCOMMENTBLOCK 		-> @"/\*([^*]+|\*[^/])+(\*/)?";
 
-	
+
 [Color(255, 0, 0)]	DIRECTIVESTRING        -> @"@?\""(\""\""|[^\""])*(""|\n)";
 [Color(128, 0, 255)]	DIRECTIVEKEYWORD	-> @"^(@TinyPG|@Parser|@Scanner|@Grammar|@ParseTree|@TextHighlighter)";
 			DIRECTIVESYMBOL	-> @"^(@|(%[^>])|=|"")+?";
@@ -25,7 +25,7 @@
 
 
 			ATTRIBUTESYMBOL	-> @"[^\[\]]";
-[Color(43, 145, 202)] ATTRIBUTEKEYWORD	-> @"^(Skip|Color|IgnoreCase|FileAndLine)";
+[Color(43, 145, 202)] ATTRIBUTEKEYWORD	-> @"^(Skip|Color|IgnoreCase)";
 			ATTRIBUTENONKEYWORD	-> @"[^\(\)\]\n\s]+";
 
 			ATTRIBUTEOPEN		-> @"\[\s*";
